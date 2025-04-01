@@ -24,7 +24,7 @@ import torch.nn.functional as F
 ## Set Hyperparameters
 class Params:
     def __init__(self):
-        self.batch_size = 64
+        self.batch_size = 32
         self.name = "resnet_50_sgd1"
         self.workers = 4
         self.lr = 0.1
@@ -40,13 +40,24 @@ class Params:
         return self.__dict__ == other.__dict__
 
 
-## Define Training Function
+#Updating with verbose tqdm train and test functions
+from tqdm import tqdm  # For Jupyter-specific progress bar
+import logging
+import time
+
+# Configure logging for Jupyter
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', force=True)
+logger = logging.getLogger(__name__)
+
 def train(dataloader, model, loss_fn, optimizer, epoch, writer):
     size = len(dataloader.dataset)
     model.train()
     start0 = time.time()
-    start = time.time()
-    for batch, (X, y) in enumerate(dataloader):
+
+    # Use tqdm for progress visualization
+    progress_bar = tqdm(enumerate(dataloader), total=len(dataloader), desc=f"Epoch {epoch+1}")
+
+    for batch, (X, y) in progress_bar:
         X, y = X.to(device), y.to(device)
 
         # Compute prediction error
@@ -56,61 +67,57 @@ def train(dataloader, model, loss_fn, optimizer, epoch, writer):
         # Backpropagation
         loss.backward()
         optimizer.step()
-        batch_size = len(X)
-        if batch % 100 == 0:
-            loss, current = loss.item(), (batch + 1) * batch_size
-            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}], {(current/size * 100):>4f}%")
-            step = epoch * size + current
-            writer.add_scalar('training loss',
-                            loss,
-                            step)
-            new_start = time.time()
-            delta = new_start - start
-            start = new_start
-            if batch != 0:
-                print("Done in ", delta, " seconds")
-                remaining_steps = size - current
-                speed = 100 * batch_size / delta
-                remaining_time = remaining_steps / speed
-                print("Remaining time (seconds): ", remaining_time)
         optimizer.zero_grad()
-    print("Entire epoch done in ", time.time() - start0, " seconds")
 
-## Define Testing Function
+        batch_size = len(X)
+        step = epoch * size + (batch + 1) * batch_size
+
+        # Update tqdm description and writer
+        if batch % 100 == 0:
+            current_loss = loss.item()
+            progress_bar.set_postfix({"loss": current_loss, "progress": f"{(batch+1)*batch_size}/{size}"})
+            if writer is not None:
+                writer.add_scalar('training loss', current_loss, step)
+            logger.info(f"Batch {batch+1}: loss={current_loss:.6f}, progress={(batch+1)*batch_size}/{size}")
+
+    epoch_time = time.time() - start0
+    logger.info(f"Epoch {epoch+1} completed in {epoch_time:.2f} seconds")
+
+
 def test(dataloader, model, loss_fn, epoch, writer, train_dataloader, calc_acc5=False):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     model.eval()
     test_loss, correct, correct_top5 = 0, 0, 0
+
+    # Use tqdm for progress visualization
+    progress_bar = tqdm(dataloader, desc=f"Testing Epoch {epoch+1}")
+
     with torch.no_grad():
-        for X, y in dataloader:
+        for X, y in progress_bar:
             X, y = X.to(device), y.to(device)
             pred = model(X)
             test_loss += loss_fn(pred, y).item()
             correct += (pred.argmax(1) == y).type(torch.float).sum().item()
+
             if calc_acc5:
                 _, pred_top5 = pred.topk(5, 1, largest=True, sorted=True)
                 correct_top5 += pred_top5.eq(y.view(-1, 1).expand_as(pred_top5)).sum().item()
-    test_loss /= num_batches
-    step = epoch * len(train_dataloader.dataset)
-    if writer != None:
-        writer.add_scalar('test loss',
-                            test_loss,
-                            step)
-    correct /= size
-    correct_top5 /= size
-    if writer != None:
-        writer.add_scalar('test accuracy',
-                            100*correct,
-                            step)
-        if calc_acc5:
-            writer.add_scalar('test accuracy5',
-                            100*correct_top5,
-                            step)
-    print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
-    if calc_acc5:
-        print(f"Test Error: \n Accuracy-5: {(100*correct_top5):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
+    test_loss /= num_batches
+    accuracy = 100 * correct / size
+    top5_accuracy = 100 * correct_top5 / size if calc_acc5 else None
+
+    step = epoch * len(train_dataloader.dataset)
+    if writer is not None:
+        writer.add_scalar('test loss', test_loss, step)
+        writer.add_scalar('test accuracy', accuracy, step)
+        if calc_acc5:
+            writer.add_scalar('test accuracy5', top5_accuracy, step)
+
+    logger.info(f"Test Results - Epoch {epoch+1}: Accuracy={accuracy:.2f}%, Avg loss={test_loss:.6f}")
+    if calc_acc5:
+        logger.info(f"Top-5 Accuracy={top5_accuracy:.2f}%")
 
 if __name__ == "__main__":
     params = Params()
@@ -155,7 +162,7 @@ if __name__ == "__main__":
 
     val_loader = torch.utils.data.DataLoader(
         val_dataset,
-        batch_size=64,
+        batch_size=32,
         num_workers=params.workers,
         shuffle=False,
         pin_memory=True
@@ -195,7 +202,7 @@ if __name__ == "__main__":
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=params.lr_step_size, gamma=params.lr_gamma)
 
     ## Current State of Training
-    start_epoch = 69
+    start_epoch = 0
     checkpoint_path = os.path.join("checkpoints", params.name, f"checkpoint.pth")
     print(checkpoint_path)
     if resume_training and os.path.exists(checkpoint_path):
@@ -214,7 +221,7 @@ if __name__ == "__main__":
     writer = SummaryWriter('runs/' + params.name)
     test(val_loader, model, loss_fn, epoch=0, writer=writer, train_dataloader=train_loader, calc_acc5=True)
     print("Starting training")
-    for epoch in range(start_epoch, 100):   
+    for epoch in range(start_epoch, 10):   
         print(f"Epoch {epoch}")
         train(train_loader, model, loss_fn, optimizer, epoch=epoch, writer=writer)
         checkpoint = {
