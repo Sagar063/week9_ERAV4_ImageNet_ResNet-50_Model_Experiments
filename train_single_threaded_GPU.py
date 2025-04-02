@@ -193,13 +193,9 @@ if __name__ == "__main__":
     log_dir = os.path.join("logs", params.name)
     metric_logger = MetricLogger(log_dir)
 
-    #aws paths
-    # training_folder_name = '/mnt/imagenet/ILSVRC/Data/CLS-LOC/train'
-    # val_folder_name = '/mnt/imagenet/ILSVRC/Data/CLS-LOC/val'
-
-    #runpod paths
-    training_folder_name = '/workspace/era-misc-sandbox/Assignment_9/imagenet/ILSVRC/Data/CLS-LOC/train'
-    val_folder_name = '/workspace/era-misc-sandbox/Assignment_9/imagenet/ILSVRC/Data/CLS-LOC/val'
+    #local paths
+    training_folder_name = r'C:\Projects\ERA_V3\Session9_Assignment_V2\ILSVRC\Data\CLS-LOC\train'
+    val_folder_name = r'C:\Projects\ERA_V3\Session9_Assignment_V2\ILSVRC\Data\CLS-LOC\val'
 
     train_transformation = transforms.Compose([
         transforms.ToTensor(),
