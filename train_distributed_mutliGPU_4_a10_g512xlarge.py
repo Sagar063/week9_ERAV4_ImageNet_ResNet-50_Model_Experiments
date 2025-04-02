@@ -9,7 +9,7 @@ import time
 from math import sqrt
 
 from model import ResNet50
-from torch.amp import autocast, GradScaler
+from torch.cuda.amp import autocast, GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
 import torch.distributed as dist
 from torch.utils.data.distributed import DistributedSampler
@@ -252,8 +252,8 @@ def main_worker(rank, world_size, params):
         log_dir = os.path.join("logs", params.name)
         metric_logger = MetricLogger(log_dir, rank)
 
-        training_folder_name = '/mnt/imagenet-volume/ILSVRC/Data/CLS-LOC/train'
-        val_folder_name = '/mnt/imagenet-volume/ILSVRC/Data/CLS-LOC/val'
+        training_folder_name = '/home/ubuntu/data/Imagenet-dataset/train'
+        val_folder_name = '/home/ubuntu/data/Imagenet-dataset/val'
 
         train_transformation = transforms.Compose([
             transforms.ToTensor(),
