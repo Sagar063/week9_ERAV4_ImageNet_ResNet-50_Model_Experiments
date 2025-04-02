@@ -34,7 +34,18 @@ import signal
 import sys
 
 import torch.distributed as dist
-#dist.destroy_process_group()
+# dist.destroy_process_group()
+
+# Add this after the imports
+def cleanup_stale_processes():
+    try:
+        if dist.is_initialized():
+            dist.destroy_process_group()
+    except:
+        pass
+
+    # Clear any processes using the port
+    os.system('fuser -k 12355/tcp')
 
 def signal_handler(sig, frame):
     print("Cleaning up...")
@@ -80,7 +91,7 @@ class MetricLogger:
 
 def setup(rank, world_size):
     os.environ['MASTER_ADDR'] = 'localhost'
-    os.environ['MASTER_PORT'] = '12355'
+    os.environ['MASTER_PORT'] = '29500'
     dist.init_process_group("nccl", rank=rank, world_size=world_size)
 
 def cleanup():
@@ -382,6 +393,7 @@ def main_worker(rank, world_size, params):
         cleanup()
 
 if __name__ == "__main__":
+    cleanup_stale_processes()  # Delete existing stale processes
     params = Params()
     
     world_size = torch.cuda.device_count()
@@ -393,5 +405,6 @@ if __name__ == "__main__":
     except Exception as e:
         print(f"Error in main process: {str(e)}")
         # Ensure all processes are terminated
+        cleanup_stale_processes()
         import sys
         sys.exit(1)
