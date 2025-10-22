@@ -212,7 +212,9 @@ python train.py --name r50_onecycle_amp \
   --img-size 224 \
   --reports
 ```
+---
 The LR-Finder ensures that the OneCycleLR schedule begins with a well-calibrated peak learning rate — leading to faster convergence, better stability, and improved final accuracy.
+
 ---
 
 ## 6. Results Summary — `r50_onecycle_amp`
@@ -234,13 +236,12 @@ The LR-Finder ensures that the OneCycleLR schedule begins with a well-calibrated
 
 ---
 
-## 7. Detailed Results & Observations
+## 7. Details about Model, Training and Validation
 
 ### 7.1 Training logs (markdown)
 <details><summary>Show logs.md</summary>
 
 ```text
-# Training Logs (terminal-like)
 # Training Logs (terminal-like)
 
 ```
@@ -659,13 +660,40 @@ weighted avg      0.156     0.151     0.142      3923
 
 ---
 
-## 8. Notes
-- OneCycleLR is stepped **per batch**, producing a single continuous rise-and-fall LR curve across all epochs.
-- AMP keeps memory and compute efficient on the 4060 Ti while maintaining model quality.
+## 8. Results Interpretation & Observations
+
+### 🧩 Training vs Validation Loss
+- The training loss decreases steadily across epochs, showing that the model continues to learn effectively.  
+- Validation loss, however, plateaus after the initial few epochs and remains significantly higher than training loss — an indicator of **overfitting**.  
+- The OneCycleLR policy helps stabilize training by decaying LR toward the end, but regularization (e.g., stronger augmentations or dropout) may be needed for further improvement.
+
+### 🎯 Training vs Validation Accuracy
+- Training Top-1 accuracy climbs consistently and surpasses **70%**, while validation accuracy saturates near **15%**.  
+- This again reflects **overfitting**, as the model fits well to training data but generalizes poorly to unseen validation samples.  
+- The gap suggests the need for either:
+  - longer training with regularization (e.g., label smoothing, MixUp, CutMix), or  
+  - fine-tuning from pretrained weights instead of training from scratch.
+
+### 🔍 Summary
+- **Training stable:** No oscillations or divergence were observed.  
+- **Learning complete:** OneCycleLR provided smooth ramp-up and decay phases.  
+- **Key observation:** The model learns internal representations but struggles with generalization on ImageNet-Mini without pretraining.
+
+---
 
 ## 9. Conclusion — Training on Local Machine
-- The 4060 Ti can comfortably handle ImageNet-Mini with batch sizes around 64 (AMP on), giving quick iteration on augmentations and scheduler settings.
-- Use TensorBoard (`tensorboard --logdir runs`) for live LR and loss monitoring.
+
+- The **RTX 4060 Ti (16 GB)** successfully handled ImageNet-Mini training from scratch with batch size 64 and mixed precision enabled.  
+- Training was efficient, with smooth convergence and no GPU memory bottlenecks.  
+- However, the large train–validation gap indicates overfitting due to limited dataset size and absence of pretrained weights.  
+- Future improvements:
+  - Apply stronger augmentations or regularization.  
+  - Experiment with fine-tuning a pretrained ResNet-50 for better validation accuracy.  
+  - Scale to full ImageNet-1K on **AWS EC2 (A10G/T4 GPU)** to benchmark reproducibility.  
+
+TensorBoard (`tensorboard --logdir runs`) can be used to monitor the OneCycleLR curve, loss trends, and learning stability in real time.
+
+---
 
 ## 10. Next Steps — EC2
 - Scale to ImageNet-1k on EC2 with multi-GPU (DDP), reusing the same `--data-root`/`--name` structure.

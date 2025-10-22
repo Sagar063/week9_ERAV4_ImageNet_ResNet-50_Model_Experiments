@@ -28,6 +28,8 @@ DIR_REPORTS = ROOT / "reports" / EXP_NAME
 README_PATH = ROOT / "README.md"
 
 # ---- Helpers -----------------------------------------------------------------
+def normalize_newlines(s: str) -> str:
+    return s.replace("\r\n", "\n").replace("\r", "\n")
 
 def newest_file(folder: Path, pattern: str = "*.png") -> Optional[Path]:
     if not folder.exists():
@@ -102,6 +104,16 @@ def main():
     logs_md = read_text(DIR_OUT / "logs.md")
     model_summary = read_text(DIR_REPORTS / "model_summary.txt")
     cls_report_top = extract_cls_toplines(read_text(DIR_REPORTS / "classification_report.txt", limit=200000))
+
+    logs_md = normalize_newlines(logs_md) if logs_md else None
+    model_summary = normalize_newlines(model_summary) if model_summary else None
+    cls_report_top = normalize_newlines(cls_report_top) if cls_report_top else None
+
+    # Optional: drop duplicate title line from logs
+    if logs_md and logs_md.lstrip().startswith("# Training Logs"):
+        first_nl = logs_md.find("\n")
+        if first_nl != -1:
+            logs_md = logs_md[first_nl+1:].lstrip()
 
     # Load README
     content = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else ""
