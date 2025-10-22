@@ -2,10 +2,12 @@
 [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)]()
 
 # ResNet-50 from scratch on ImageNet-Mini (OneCycleLR + AMP)
----
+
 This repository trains **ResNet-50 from scratch** on **ImageNet-Mini** using **OneCycleLR** and **mixed precision (AMP)** on a **single GPU (RTX 4060 Ti, 16 GB)**.  
-Outputs include TensorBoard logs, structured CSV and Markdown training logs for each epoch, model summary, and an optional classification report
----
+Outputs include TensorBoard logs, structured CSV and Markdown training logs for each epoch, model summary, and an optional classification report.
+
+<hr />
+
 
 ## 1. Overview
 
