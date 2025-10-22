@@ -2,7 +2,7 @@
 [![Open Source Love](https://badges.frapsoft.com/os/v1/open-source.svg?v=103)]()
 
 # ResNet-50 from scratch on ImageNet-Mini (OneCycleLR + AMP)
-
+---
 This repository trains **ResNet-50 from scratch** on **ImageNet-Mini** using **OneCycleLR** and **mixed precision (AMP)** on a **single GPU (RTX 4060 Ti, 16 GB)**.  
 Outputs include TensorBoard logs, structured CSV and Markdown training logs for each epoch, model summary, and an optional classification report
 ---
@@ -677,7 +677,7 @@ weighted avg      0.156     0.151     0.142      3923
 ### 🔍 Summary
 - **Training stable:** No oscillations or divergence were observed.  
 - **Learning complete:** OneCycleLR provided smooth ramp-up and decay phases.  
-- **Key observation:** The model learns internal representations but struggles with generalization on ImageNet-Mini without pretraining.
+- **Key observation:** The model learns internal representations but struggles with generalization on ImageNet-Mini.
 
 ---
 
@@ -688,7 +688,6 @@ weighted avg      0.156     0.151     0.142      3923
 - However, the large train–validation gap indicates overfitting due to limited dataset size and absence of pretrained weights.  
 - Future improvements:
   - Apply stronger augmentations or regularization.  
-  - Experiment with fine-tuning a pretrained ResNet-50 for better validation accuracy.  
   - Scale to full ImageNet-1K on **AWS EC2 (A10G/T4 GPU)** to benchmark reproducibility.  
 
 TensorBoard (`tensorboard --logdir runs`) can be used to monitor the OneCycleLR curve, loss trends, and learning stability in real time.
