@@ -133,10 +133,11 @@ It maintains the same structure and class diversity but is dramatically smaller,
 - 🧩 **Transfer Learning Hub:** Models pretrained on ImageNet form the backbone of countless computer-vision systems.
 
 ### Sample Classes and Images
-```markdown
+
 ![ImageNet Samples](images/imagenet_images.png)  
 *ImageNet-Mini sample classes and images.*
-```
+
+---
 
 ## 4. About ResNet-50
 
@@ -151,13 +152,87 @@ Residual connections (skip connections) allow gradients to flow more effectively
 - 🚀 **Impact:** ResNet architectures revolutionized deep learning and remain a standard backbone for modern vision models.
 
 ### Architecture Diagram
-```markdown
+
 ![ResNet-50 Architecture](images/ResNet_50_architecture.png)  
 *Residual Networks (ResNet-50) architecture.*
+
+---
+
+## 5. Learning Rate Finder (LR-Finder)
+
+Before starting full training, we run a **Learning Rate Finder (LR-Finder)** to determine an optimal `--max-lr` value for the **OneCycleLR** policy.  
+This ensures faster and more stable convergence by selecting a learning rate that is high enough to accelerate training but low enough to avoid divergence.
+
+---
+
+### 🔍 Why we use LR-Finder
+
+- 🚀 **Eliminates guesswork:** Automatically finds the ideal learning-rate range.  
+- ⚖️ **Improves efficiency:** Prevents wasting epochs on suboptimal LRs.  
+- 📈 **Optimizes OneCycleLR:** The discovered LR becomes the peak (`max_lr`) in the OneCycle schedule.  
+- 💡 **Enhances reproducibility:** The LR-Finder curve can be regenerated anytime before training.
+
+---
+
+### ⚙️ How it works
+
+The script [`lr_finder.py`](lr_finder.py) performs a **learning-rate range test** using `torch_lr_finder.LRFinder`.  
+You can run it as:
+
+```bash
+python lr_finder.py find_lr \
+  --start_lr 1e-7 \
+  --end_lr 1.0 \
+  --num_iter 100 \
+  --batch_size 64
+
 ```
 ---
 
-## 5. Results Summary — `r50_onecycle_amp`
+### ⚙️ What happens internally
+- Initializes a ResNet-50 model (no pretrained weights) and builds the ImageNet-Mini training DataLoader.
+- Starts from a learning rate of 1e-7 and increases it exponentially up to 1.0 over 100 iterations.
+- Tracks the instantaneous training loss for each mini-batch.
+- Plots Loss vs Learning Rate and saves the curve to lr_finder_plots/.
+---
+
+### 📈 Observation — My Experiment
+
+Below is the LR-Finder curve obtained from my ImageNet-Mini run (`iter: 100`):
+
+![Learning Rate Finder](lr_finder_plots/2025-10-22_17h04_35.png)
+
+**Interpretation:**
+- The x-axis shows the **learning rate**, and the y-axis shows the **training loss**.  
+- For very small learning rates (< 1e-5), the loss stays almost flat — learning is too slow.
+- Between 1e-4 and 3e-3, the loss starts to drop steadily — the network begins learning efficiently.
+- After ≈ 1e-2, the loss shoots up — indicating instability and divergence.
+
+🟢 Optimal LR range: Between 1e-3 and 3e-2.
+🟢 Suggested LR: 4.64 × 10⁻³ (steepest descent region), which is automatically reported by the script (lr_finder.suggestion()).
+This value is selected as the --max-lr for the OneCycleLR schedule.
+
+
+---
+
+### 🧩 Using the result
+The suggested LR is used as the peak learning rate (--max-lr) for the OneCycleLR scheduler in the main training script.
+During training, OneCycleLR starts below this LR, ramps up to it, and then gradually decays — forming a smooth, single-cycle learning-rate curve across all epochs.
+
+Final Training Command:
+```bash
+python train.py --name r50_onecycle_amp \
+  --epochs 20 \
+  --batch-size 64 \
+  --max-lr 0.0046 \
+  --workers 8 \
+  --img-size 224 \
+  --reports
+```
+The LR-Finder ensures that the OneCycleLR schedule begins with a well-calibrated peak learning rate — leading to faster convergence, better stability, and improved final accuracy.
+---
+
+## 6. Results Summary — `r50_onecycle_amp`
 
 **Curves**
 - Loss: `reports/r50_onecycle_amp/loss_curve.png`  
