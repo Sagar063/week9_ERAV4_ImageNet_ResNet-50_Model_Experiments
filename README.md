@@ -4,7 +4,7 @@
 # ResNet-50 from scratch on ImageNet-Mini (OneCycleLR + AMP)
 
 This repository trains **ResNet-50 from scratch** on **ImageNet-Mini** using **OneCycleLR** and **mixed precision (AMP)** on a **single GPU (RTX 4060 Ti, 16 GB)**.  
-Outputs include TensorBoard logs, CIFAR-style CSV/Markdown logs, model summary, and optional classification report.
+Outputs include TensorBoard logs, structured CSV and Markdown training logs for each epoch, model summary, and an optional classification report
 
 > **Learning Rate Finder (LR-Finder)**  
 > We first run LR-Finder to discover a good `max_lr`. LR-Finder explores a rising LR schedule and records loss vs LR, helping pick a stable yet fast starting LR.  
@@ -23,8 +23,7 @@ Outputs include TensorBoard logs, CIFAR-style CSV/Markdown logs, model summary, 
 - **Device**: **RTX 4060 Ti (16 GB VRAM)**  
 - **Monitoring**: TensorBoard + CIFAR-style CSV/Markdown logs  
 - **Checkpoints**: `checkpoints/r50_onecycle_amp/{checkpoint,best}.pth`
-
-> **TensorBoard** (recommended while training)  
+-**TensorBoard** (recommended while training)  
 > ```bash
 > tensorboard --logdir runs
 > ```  
@@ -36,17 +35,17 @@ Outputs include TensorBoard logs, CIFAR-style CSV/Markdown logs, model summary, 
 
 ### 2.1 Clone & setup environment
 ```bash
-git clone <your-repo-url> ImageNet-ResNet50-CNN
-cd ImageNet-ResNet50-CNN
-python -m pip install --upgrade pip setuptools wheel
-python -m pip install --index-url https://download.pytorch.org/whl/cu121 \
-  torch==2.2.2+cu121 torchvision==0.17.2+cu121
-python -m pip install albumentations==1.4.7 opencv-python-headless torch-lr-finder \
-  tensorboard torchinfo matplotlib tqdm pandas
+git clone https://github.com/Sagar063/week9_ERAV4_ImageNet_ResNet-50_Model_Experiments.git
+cd week9_ERAV4_ImageNet_ResNet-50_Model_Experiments
+python -m venv .venv && source .venv/bin/activate      # Linux/Mac
+# or
+# .\.venv\Scripts\Activate.ps1                       # Windows PowerShell
+
+pip install -r requirements.txt
 ```
 
 ### 2.2 Train from scratch (ImageNet-Mini)
-Dataset (Kaggle): https://www.kaggle.com/datasets/ifigotin/imagenetmini-1000  
+Download Dataset (Kaggle): https://www.kaggle.com/datasets/ifigotin/imagenetmini-1000  
 Place it as:
 ```
 data/imagenet-mini/
@@ -90,43 +89,72 @@ python train.py --name r50_onecycle_amp --resume
 
 ### 2.5 Repository layout
 ```
-dataset/imagenet_mini.py
-lr_finder.py
-model.py
-train.py
-lr_finder_plots/                  # latest LR plot is embedded above
-out/r50_onecycle_amp/train_log.csv
-out/r50_onecycle_amp/logs.md
-checkpoints/r50_onecycle_amp/{checkpoint,best}.pth
-reports/r50_onecycle_amp/{loss_curve.png,accuracy_curve.png,model_summary.txt,classification_report.txt}
-runs/r50_onecycle_amp/            # TensorBoard event files
-images/{imagenet_samples.png,resnet50_arch.png}  # OPTIONAL: your images
+week8_ERAV4_CIFAR_100_ResNetModel_Experiments/
+├─ train.py
+├─ model.py
+├─ lr_finder.py
+├─ dataset/
+│ └─ imagenet_mini.py
+├─ lr_finder_plots/                  # latest LR plot is embedded above
+├─ runs/r50_onecycle_amp/            # TensorBoard event files
+└─ out/
+│   ├─ r50_onecycle_amp/
+│      ├─ train_log.csv
+│      ├─ logs.md
+│      └─ out/
+└─ reports/
+│   ├─ r50_onecycle_amp/
+│       ├─ accuracy_curve.png
+│       ├─ classification_report.txt
+│       └─ confusion_matrix.csv
+│       ├─ loss_curve.png
+│       └─ model_summary.txt
+└─ images/
+│   ├─ {imagenet_samples.png,resnet50_arch.png}  # OPTIONAL:  images
+├─ update_readme.py
+├─ README.md
+
 ```
 
 ---
 
 ## 3. About ImageNet
-**ImageNet** is a large-scale image dataset; **ImageNet-Mini** is a ~4 GB subset with 1k classes that’s great for fast local iteration and sanity-checking pipelines before scaling to full ImageNet-1k.  
-If you want images in this README, add:
-```
-images/imagenet_samples.png
-```
-and the line:
+
+**ImageNet** is one of the most influential datasets in computer vision research.  
+It contains over **14 million labeled images** organized into more than **22,000 categories**, and has become the foundation for evaluating and benchmarking deep neural networks for image classification and object recognition.
+
+For this iteration, we use **ImageNet-Mini**, a curated **1,000-class subset (~4 GB)** derived from the ImageNet-1K dataset.  
+It maintains the same structure and class diversity but is dramatically smaller, making it ideal for **rapid experimentation**, **debugging pipelines**, and **prototyping architectures** locally before scaling to full ImageNet-1K.
+
+**Key Highlights:**
+- 📚 **Standard Benchmark:** Widely used for assessing model accuracy and robustness.  
+- ⚙️ **Lightweight & Scalable:** Enables faster iteration on consumer GPUs.  
+- 🎯 **Diverse Classes:** Includes animals, vehicles, natural scenes, and household objects.  
+- 🧩 **Transfer Learning Hub:** Models pretrained on ImageNet form the backbone of countless computer-vision systems.
+
+### Sample Classes and Images
 ```markdown
-![ImageNet-Mini Samples](images/imagenet_samples.png)
+![ImageNet Samples](images/imagenet_images.png)  
+*ImageNet-Mini sample classes and images.*
 ```
 
 ## 4. About ResNet-50
-ResNet-50 (He et al., 2015) uses residual connections to train deeper CNNs effectively.  
-To display the architecture image, add:
-```
-images/resnet50_arch.png
-```
-and reference:
-```markdown
-![ResNet-50 Architecture](images/resnet50_arch.png)
-```
 
+**ResNet-50** (He et al., 2015) is a deep convolutional neural network consisting of **50 layers** built on the concept of *residual learning*.  
+Residual connections (skip connections) allow gradients to flow more effectively through very deep networks, mitigating the **vanishing-gradient problem** and enabling the successful training of extremely deep CNNs.
+
+**Key Features:**
+- 🧩 **Residual Blocks:** Learn identity mappings that help deeper networks converge faster.  
+- ⚙️ **Bottleneck Design:** Uses 1×1, 3×3, and 1×1 convolutions to balance accuracy and computation.  
+- 🧠 **Depth:** 48 convolutional + 1 max-pool + 1 average-pool + 1 fully-connected layer (≈ 25.6 M parameters).  
+- 🎯 **Input:** 224 × 224 × 3 images  **Output:** 1000 classes (ImageNet-1K).  
+- 🚀 **Impact:** ResNet architectures revolutionized deep learning and remain a standard backbone for modern vision models.
+
+### Architecture Diagram
+```markdown
+![ResNet-50 Architecture](images/ResNet_50_architecture.png)  
+*Residual Networks (ResNet-50) architecture.*
+```
 ---
 
 ## 5. Results Summary — `r50_onecycle_amp`
