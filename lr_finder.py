@@ -12,13 +12,28 @@ import torch.optim as optim
 from torch_lr_finder import LRFinder
 from torchvision.models import resnet50
 
-from dataset.imagenet_mini import make_loaders
+from dataset.imagenet import make_loaders
+# from dataset.imagenet_mini import make_loaders
 import fire
 
 
+# def find_lr(
+#     #data_root="data/imagenet_mini",
+#     data_root = str(Path(__file__).resolve().parent / "data" / "imagenet-mini"),
+#     start_lr=1e-7,
+#     end_lr=1.0,
+#     num_iter=150,
+#     batch_size=64,
+#     workers=8,
+#     img_size=224,
+#     momentum=0.9,
+#     weight_decay=1e-4,
+#     use_class_style_aug=False,
+#     output_dir="lr_finder_plots"
+# ):
 def find_lr(
     #data_root="data/imagenet_mini",
-    data_root = str(Path(__file__).resolve().parent / "data" / "imagenet-mini"),
+    data_root = str(Path(__file__).resolve().parent / "data" / "imagenet"),
     start_lr=1e-7,
     end_lr=1.0,
     num_iter=150,
@@ -28,7 +43,7 @@ def find_lr(
     momentum=0.9,
     weight_decay=1e-4,
     use_class_style_aug=False,
-    output_dir="lr_finder_plots"
+    output_dir="lr_finder_plots_imagenet1k"
 ):
     """
     LR range test to pick a good --max-lr for OneCycle.
@@ -46,9 +61,10 @@ def find_lr(
         batch_size=batch_size,
         workers=workers,
         img_size=img_size,
-        sample_limit_for_stats=None,
+        sample_limit_for_stats=100000, #None
         use_class_style_aug=use_class_style_aug,
     )
+
 
     model = resnet50(weights=None, num_classes=len(classes)).to(device)
     criterion = nn.CrossEntropyLoss().to(device)
