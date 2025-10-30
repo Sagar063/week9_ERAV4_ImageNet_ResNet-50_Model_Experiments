@@ -68,4 +68,5 @@ ENV/
 
 # OS generated files #
 .DS_Store
-Thumbs.db
+Thumbs.dblogs/**/*.pth
+
