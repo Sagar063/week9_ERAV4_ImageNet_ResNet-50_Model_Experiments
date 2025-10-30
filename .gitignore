@@ -70,3 +70,8 @@ ENV/
 .DS_Store
 Thumbs.dblogs/**/*.pth
 
+# logs & backups (keep out of future commits)
+backup_aws_v1/
+logs/g5x_1gpu_run/
+# optionally ignore all logs:
+# logs/
