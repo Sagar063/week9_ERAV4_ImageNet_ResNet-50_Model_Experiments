@@ -15,7 +15,8 @@ import cv2
 
 _DEFAULT_IMG_SIZE = 224
 _STATS_DIR = "data_stats"
-_STATS_FILE = "imagenet_1k_stats.json"
+#_STATS_FILE = "imagenet_1k_stats.json"
+_STATS_FILE = "imagenet_imagenette_stats.json"
 
 
 class AlbumentationsImageFolder(Dataset):

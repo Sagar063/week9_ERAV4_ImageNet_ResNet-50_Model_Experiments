@@ -1,61 +1,131 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-train_full_ImageNet_AWS.py
-- Single-GPU or Multi-GPU (DDP via torchrun)
-- AMP + channels_last
-- Fast DataLoader defaults
-- Resume checkpoints
-- Rank-0 logging only
-- Compatible with standard ImageNet/Imagenette folder layout
-- Lightweight CSV logging to --log-dir/train_log.csv
+train_full_ImageNet_AWS_ddp.py
+Merged trainer:  single-GPU "good hygiene" + AWS speed (DDP/DALI).
+- Switchable loader: --loader dali|albumentations (default: dali)
+- SGD + OneCycleLR with global-batch LR scaling, label smoothing
+- AMP + channels_last + cudnn.benchmark + matmul precision
+- DDP with rank-0 logging/checkpointing
+- Metrics: Top-1, Top-5, imgs/sec
+- Logging: out/train_log.csv, out/logs.md
+- Reports: reports/accuracy_curve.png, reports/loss_curve.png, reports/classification_report.txt,
+           reports/confusion_matrix.csv, reports/model_summary.txt
+- Checkpoints: checkpoints/last_epoch.pth, checkpoints/best_acc_epochXXX.pth
+- Optional TensorBoard (--use-tb), optional classification report (--do-report)
+- MixUp/CutMix toggles via booleans near the train loop (no argparse needed)
 """
 
-import os, time, argparse, random
+import os, sys, time, math, argparse, random, csv, json
 from pathlib import Path
-import csv
+from typing import Tuple, List
+import numpy as np
 
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.distributed as dist
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
 
 import torchvision
 from torchvision import transforms
+from torchvision.models import resnet50
+from model import ResNet50
+import matplotlib.pyplot as plt
+from datetime import timedelta
+# optional: pretty model table
+try:
+    from torchinfo import summary
+except Exception:
+    summary = None
 
-from utils.dist_utils import (
-    setup_ddp, cleanup_ddp, is_dist, get_rank, get_world_size, is_main_process
-)
+# cache hooks visible to helper fns
+CACHED_MEAN = None
+CACHED_STD  = None
 
+
+
+# ---------------------- DDP helpers ----------------------
+def is_dist():
+    return dist.is_available() and dist.is_initialized()
+
+def get_world_size():
+    return dist.get_world_size() if is_dist() else 1
+
+def get_rank():
+    return dist.get_rank() if is_dist() else 0
+
+def is_main_process():
+    return get_rank() == 0
+
+
+def setup_ddp(backend="nccl", timeout_seconds=36000):
+    if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+        try:
+            dist.init_process_group(backend=backend, timeout=timedelta(seconds=timeout_seconds))
+        except Exception:
+            dist.init_process_group(backend=backend)
+        torch.cuda.set_device(int(os.environ.get("LOCAL_RANK", 0)))
+
+# def setup_ddp(backend="nccl", timeout_seconds=36000):
+#     if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
+#         # PyTorch 2.4+ supports timedelta for timeout; fallback for older
+#         try:
+#             dist.init_process_group(backend=backend, timeout=torch.timedelta(seconds=timeout_seconds))
+#         except Exception:
+#             dist.init_process_group(backend=backend)
+#         torch.cuda.set_device(int(os.environ.get("LOCAL_RANK", 0)))
+
+def cleanup_ddp():
+    if is_dist():
+        try:
+            dist.barrier()
+        except Exception:
+            pass
+        dist.destroy_process_group()
+
+# ---------------------- Utility ----------------------
 def set_seed(seed: int = 42):
     random.seed(seed)
+    np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
-    # performance-friendly defaults
     torch.backends.cudnn.deterministic = False
     torch.backends.cudnn.benchmark = True
     try:
-        torch.set_float32_matmul_precision('high')
+        torch.set_float32_matmul_precision("high")
     except Exception:
         pass
 
-def create_model(num_classes=1000, pretrained=False):
-    # ResNet-50 (torchvision)
-    m = torchvision.models.resnet50(
-        weights=None if not pretrained else torchvision.models.ResNet50_Weights.IMAGENET1K_V1
-    )
-    if num_classes != 1000:
-        m.fc = nn.Linear(m.fc.in_features, num_classes)
-    return m
+# def ensure_dirs(out_dir: Path):
+#     (out_dir / "out").mkdir(parents=True, exist_ok=True)
+#     (out_dir / "reports").mkdir(parents=True, exist_ok=True)
+#     (out_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
+#     (out_dir / "runs").mkdir(parents=True, exist_ok=True)
 
-def build_transforms(args):
-    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                     std=[0.229, 0.224, 0.225])
+def append_csv(path: Path, row: List):
+    first = not path.exists()
+    with open(path, "a", newline="") as f:
+        w = csv.writer(f)
+        if first:
+            w.writerow(["epoch","phase","loss","top1","top5","lr","imgs_per_sec"])
+        w.writerow(row)
+
+def append_md(path: Path, line: str):
+    with open(path, "a") as f:
+        f.write(line + "\n")
+
+# ---------------------- Data loaders ----------------------
+def build_torchvision_datasets(args):
+    mean = CACHED_MEAN if CACHED_MEAN is not None else [0.485, 0.456, 0.406]
+    std  = CACHED_STD  if CACHED_STD  is not None else [0.229, 0.224, 0.225]
+    normalize = transforms.Normalize(mean=mean, std=std)
+
     train_tf = transforms.Compose([
         transforms.RandomResizedCrop(args.crop_size, scale=(0.08, 1.0)),
-        transforms.RandomHorizontalFlip(),
+        transforms.RandomHorizontalFlip(0.5),
         transforms.ToTensor(),
         normalize,
     ])
@@ -65,76 +135,179 @@ def build_transforms(args):
         transforms.ToTensor(),
         normalize,
     ])
-    return train_tf, val_tf
-
-def build_datasets(args):
-    data_root = Path(args.data)
-    # Expect standard structure: data/train/<class> , data/val/<class>
-    train_dir = data_root / "train"
-    val_dir   = data_root / "val"
-    train_tf, val_tf = build_transforms(args)
-
-    if not train_dir.exists():
-        raise FileNotFoundError(f"Train folder not found: {train_dir}")
-    if not val_dir.exists():
-        raise FileNotFoundError(
-            f"Val folder not found: {val_dir}\n"
-            "If your ImageNet val is flat, run scripts/fix_imagenet_val.py first."
-        )
-
+    root = Path(args.data)
+    train_dir, val_dir = root / "train", root / "val"
+    if not train_dir.exists() or not val_dir.exists():
+        raise FileNotFoundError(f"Expect {root}/train and {root}/val")
     train_ds = torchvision.datasets.ImageFolder(str(train_dir), transform=train_tf)
     val_ds   = torchvision.datasets.ImageFolder(str(val_dir),   transform=val_tf)
-    return train_ds, val_ds
+    classes = train_ds.classes
+    return train_ds, val_ds, classes,mean, std
 
-def save_checkpoint(state, out_dir, is_best=False):
-    out = Path(out_dir); out.mkdir(parents=True, exist_ok=True)
-    torch.save(state, out / "checkpoint.pth")
-    if is_best:
-        torch.save(state, out / "best.pth")
+def count_images(root: Path) -> int:
+    exts = (".jpg",".jpeg",".png",".bmp")
+    n = 0
+    for p, _, files in os.walk(root):
+        n += sum(1 for f in files if f.lower().endswith(exts))
+    return n
 
-def load_checkpoint(path, map_location="cpu"):
-    return torch.load(path, map_location=map_location)
+def build_dali_iterators(args, device_id, world_size, rank):
+    from dataset.imagenet_dali import dali_loader
+    #train_iter = dali_loader(str(Path(args.data)/"train"), args.batch_size, args.workers, device_id, world_size, rank, train=True)
+    train_iter = dali_loader(str(Path(args.data)/"train"),
+                            args.batch_size, args.workers,
+                            device_id, world_size, rank,
+                            train=True, mean=CACHED_MEAN, std=CACHED_STD)
 
-def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, criterion):
+    # For validation use torchvision loader for consistent metrics/reporting
+    _, val_ds, _, _, _ = build_torchvision_datasets(args)
+    return train_iter, val_ds
+
+def build_albumentations_loaders(args, world_size, rank):
+    from dataset.imagenet import make_loaders
+    train_loader, val_loader, classes, mean, std = make_loaders(
+        data_root=args.data,
+        batch_size=args.batch_size,
+        workers=args.workers,
+        img_size=args.crop_size,
+        sample_limit_for_stats=args.stats_samples,
+        use_class_style_aug=args.use_class_style,
+        distributed=(world_size > 1),
+        seed=args.seed
+    )
+    return train_loader, val_loader, classes, mean, std
+
+# ---------------------- Model / Metrics ----------------------
+# def create_model(num_classes=1000, pretrained=False):
+#     m = resnet50(weights=None if not pretrained else torchvision.models.ResNet50_Weights.IMAGENET1K_V1)
+#     if num_classes != 1000:
+#         m.fc = nn.Linear(m.fc.in_features, num_classes)
+#     return m
+
+@torch.no_grad()
+def accuracy_topk(output, target, topk=(1,5)):
+    maxk = max(topk)
+    B = target.size(0)
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1))
+    res = []
+    for k in topk:
+        correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
+        res.append((correct_k.item() * 100.0) / B)
+    return res  # [top1, top5]
+
+def all_reduce_sum(value: float, device):
+    if get_world_size() == 1:
+        return value
+    t = torch.tensor([value], device=device, dtype=torch.float32)
+    dist.all_reduce(t, op=dist.ReduceOp.SUM)
+    return t.item()
+
+# ---------------------- Training/Eval ----------------------
+def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, criterion, use_mixup, use_cutmix):
     model.train()
-    t0 = time.time()
     running_loss = 0.0
     total = 0
-    correct = 0
-    for i, (images, targets) in enumerate(loader):
+    top1_sum = 0.0
+    top5_sum = 0.0
+    imgs_sum = 0.0
+
+    def mixup_data(x, y, alpha=0.2):
+        if alpha <= 0: return x, y, y, 1.0
+        lam = np.random.beta(alpha, alpha)
+        index = torch.randperm(x.size(0), device=x.device)
+        mixed_x = lam * x + (1 - lam) * x[index]
+        y_a, y_b = y, y[index]
+        return mixed_x, y_a, y_b, lam
+
+    def mixup_criterion(crit, pred, y_a, y_b, lam):
+        return lam * crit(pred, y_a) + (1 - lam) * crit(pred, y_b)
+
+    def cutmix_data(x, y, alpha=1.0):
+        if alpha <= 0: return x, y, y, 1.0
+        lam = np.random.beta(alpha, alpha)
+        B, C, H, W = x.size()
+        cx = np.random.randint(W); cy = np.random.randint(H)
+        rw = int(W * np.sqrt(1 - lam)); rh = int(H * np.sqrt(1 - lam))
+        x1 = max(cx - rw // 2, 0); x2 = min(cx + rw // 2, W)
+        y1 = max(cy - rh // 2, 0); y2 = min(cy + rh // 2, H)
+        index = torch.randperm(B, device=x.device)
+        x[:, :, y1:y2, x1:x2] = x[index, :, y1:y2, x1:x2]
+        lam = 1 - ((x2 - x1) * (y2 - y1) / (W * H))
+        y_a, y_b = y, y[index]
+        return x, y_a, y_b, lam
+
+    for i, batch in enumerate(loader):
+        # Support DALIGenericIterator vs PyTorch loader
+        if isinstance(batch, list) or (isinstance(batch, tuple) and len(batch) == 1):
+            data = batch[0]
+            images = data["images"]
+            targets = data["labels"].squeeze(-1).long()
+        else:
+            images, targets = batch
+                    
+        # if i == 0 and is_main_process():
+        #     print(f"=> DALI batch0: images {tuple(images.shape)} (expect [N,3,{args.crop_size},{args.crop_size}])")
+
         if args.channels_last:
             images = images.to(device=device, non_blocking=True, memory_format=torch.channels_last)
         else:
             images = images.to(device=device, non_blocking=True)
         targets = targets.to(device=device, non_blocking=True)
 
+        # Optional MixUp/CutMix
+        targets_a = targets_b = None
+        lam = 1.0
+        if use_mixup:
+            images, targets_a, targets_b, lam = mixup_data(images, targets, alpha=0.2)
+        elif use_cutmix:
+            images, targets_a, targets_b, lam = cutmix_data(images, targets, alpha=1.0)
+
         optimizer.zero_grad(set_to_none=True)
+        t_iter0 = time.time()
         with torch.cuda.amp.autocast(enabled=args.amp):
             outputs = model(images)
-            loss = criterion(outputs, targets)
+            if use_mixup or use_cutmix:
+                loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
+            else:
+                loss = criterion(outputs, targets)
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
+        args.scheduler.step()
 
-        running_loss += loss.item() * images.size(0)
-        _, pred = outputs.max(1)
-        total += targets.size(0)
-        correct += pred.eq(targets).sum().item()
+        with torch.no_grad():
+            t1, t5 = accuracy_topk(outputs, targets if not (use_mixup or use_cutmix) else targets_a, topk=(1,5))
+        B = images.size(0)
+        iter_time = max(time.time() - t_iter0, 1e-6)
+        imgs_per_sec = (B * get_world_size()) / iter_time
 
-    epoch_loss = running_loss / max(total, 1)
-    epoch_acc = 100.0 * correct / max(total, 1)
+        running_loss += loss.item() * B
+        total += B
+        top1_sum += t1 * B
+        top5_sum += t5 * B
+        imgs_sum += imgs_per_sec
+
+    device = next(model.parameters()).device
+    total_global = all_reduce_sum(float(total), device)
+    loss_global  = all_reduce_sum(float(running_loss), device) / max(total_global, 1.0)
+    top1_global  = all_reduce_sum(float(top1_sum), device) / max(total_global, 1.0)
+    top5_global  = all_reduce_sum(float(top5_sum), device) / max(total_global, 1.0)
+
     if is_main_process():
-        print(f"[Train] Epoch {epoch} | loss {epoch_loss:.4f} | acc {epoch_acc:.2f}% | time {time.time()-t0:.1f}s")
-    return {"loss": epoch_loss, "acc": epoch_acc}
+        print(f"[Train] Epoch {epoch} | loss {loss_global:.4f} | top1 {top1_global:.2f}% | top5 {top5_global:.2f}% | imgs/s ~{imgs_sum/max(len(loader),1):.0f}")
+    return {"loss": loss_global, "top1": top1_global, "top5": top5_global, "imgs_per_sec": imgs_sum/max(len(loader),1)}
 
 @torch.no_grad()
-def validate(model, loader, device, args, criterion):
+def validate(model, loader, device, args, criterion, epoch):
     model.eval()
-    t0 = time.time()
     running_loss = 0.0
     total = 0
-    correct = 0
-    for images, targets in loader:
+    top1_sum = 0.0
+    top5_sum = 0.0
+    for batch in loader:
+        images, targets = batch
         if args.channels_last:
             images = images.to(device=device, non_blocking=True, memory_format=torch.channels_last)
         else:
@@ -143,17 +316,25 @@ def validate(model, loader, device, args, criterion):
         with torch.cuda.amp.autocast(enabled=args.amp):
             outputs = model(images)
             loss = criterion(outputs, targets)
-        running_loss += loss.item() * images.size(0)
-        _, pred = outputs.max(1)
-        total += targets.size(0)
-        correct += pred.eq(targets).sum().item()
 
-    epoch_loss = running_loss / max(total, 1)
-    epoch_acc = 100.0 * correct / max(total, 1)
+        t1, t5 = accuracy_topk(outputs, targets, topk=(1,5))
+        B = images.size(0)
+        running_loss += loss.item() * B
+        total += B
+        top1_sum += t1 * B
+        top5_sum += t5 * B
+
+    device = next(model.parameters()).device
+    total_global = all_reduce_sum(float(total), device)
+    loss_global  = all_reduce_sum(float(running_loss), device) / max(total_global, 1.0)
+    top1_global  = all_reduce_sum(float(top1_sum), device) / max(total_global, 1.0)
+    top5_global  = all_reduce_sum(float(top5_sum), device) / max(total_global, 1.0)
+
     if is_main_process():
-        print(f"[Val]   loss {epoch_loss:.4f} | acc {epoch_acc:.2f}% | time {time.time()-t0:.1f}s")
-    return {"loss": epoch_loss, "acc": epoch_acc}
+        print(f"[Val]   Epoch {epoch} | loss {loss_global:.4f} | top1 {top1_global:.2f}% | top5 {top5_global:.2f}%")
+    return {"loss": loss_global, "top1": top1_global, "top5": top5_global}
 
+# ---------------------- Args ----------------------
 def parse_args():
     p = argparse.ArgumentParser()
     p.add_argument('--data', type=str, required=True, help='Path that contains train/ and val/ folders')
@@ -161,114 +342,315 @@ def parse_args():
     p.add_argument('--batch-size', type=int, default=256)
     p.add_argument('--eval-batch-size', type=int, default=256)
     p.add_argument('--workers', type=int, default=min(8, os.cpu_count() or 8))
-    p.add_argument('--lr', type=float, default=0.1)
-    p.add_argument('--weight-decay', type=float, default=0.05)
     p.add_argument('--amp', action='store_true')
     p.add_argument('--channels-last', action='store_true')
     p.add_argument('--resume', type=str, default='')
-    p.add_argument('--log-dir', type=str, default='./logs')
+    p.add_argument('--out-dir', type=str, default='./')
     p.add_argument('--num-classes', type=int, default=1000)
     p.add_argument('--pretrained', action='store_true')
     p.add_argument('--seed', type=int, default=42)
-    p.add_argument('--eval-on-single-rank', action='store_true')
     p.add_argument('--crop-size', type=int, default=224, help='Image crop size (default: 224)')
+    p.add_argument('--loader', choices=['dali','albumentations'], default='dali', help='Data pipeline')
+    p.add_argument('--stats-samples', type=int, default=50000, help='Samples to compute mean/std for albumentations')
+    p.add_argument('--use-class-style', action='store_true', help='Use class-style aug (albumentations path only)')
+    p.add_argument('--use-tb', action='store_true', help='Enable TensorBoard (rank-0 only)')
+    p.add_argument('--stats-file', type=str, default=None,
+               help='Path to cached mean/std JSON (from lr_finder). If unset, defaults are used.')
+
+    # OneCycleLR knobs
+    p.add_argument('--max-lr', type=float, default=None, help='If None use linear scaling: 0.1*(global_bsz/256)')
+    p.add_argument('--pct-start', type=float, default=0.3)
+    p.add_argument('--div-factor', type=float, default=25.0)
+    p.add_argument('--final-div-factor', type=float, default=1e4)
+    # Classification report / confusion matrix
+    p.add_argument('--do-report', action='store_true', help='Generate classification_report and confusion_matrix at end')
     return p.parse_args()
 
+# ---------------------- Main ----------------------
 def main():
     args = parse_args()
     set_seed(args.seed)
 
-    setup_ddp()  # initializes process group if torchrun env vars are set
+    setup_ddp()
     local_rank = int(os.environ.get("LOCAL_RANK", 0)) if is_dist() else 0
     device = torch.device('cuda', local_rank) if torch.cuda.is_available() else torch.device('cpu')
+    world_size = get_world_size()
+    rank = get_rank()
+    # console header like single-gpu script
+    print(f"=> device: {'cuda' if torch.cuda.is_available() else 'cpu'} | AMP: {bool(args.amp)}")
+    print(f"=> DDP: {is_dist()} | world_size: {world_size} | rank: {rank} | local_rank: {local_rank}")
 
-    # --- CSV logging setup (rank-0 only) ---
+    cached_mean, cached_std = None, None
+    if args.stats_file and os.path.isfile(args.stats_file):
+        import json
+        with open(args.stats_file) as f:
+            s = json.load(f)
+            cached_mean, cached_std = s.get("mean"), s.get("std")
+    global CACHED_MEAN, CACHED_STD
+    CACHED_MEAN, CACHED_STD = cached_mean, cached_std
+    # out_dir = Path(args.out_dir)
+    # ensure_dirs(out_dir)
+    # csv_path = out_dir / "out" / "train_log.csv"
+    # md_path  = out_dir / "out" / "logs.md"
+    # ckpt_dir = out_dir / "checkpoints"
+    # reports_dir = out_dir / "reports"
+
+    # Interpret --out-dir as the RUN NAME (e.g., "g5x_1gpu_run")
+    run_name   = Path(args.out_dir).name
+    base       = Path(".")
+    out_dir    = base / "out" / run_name
+    ckpt_dir   = base / "checkpoints" / run_name
+    reports_dir= base / "reports" / run_name
+    runs_dir   = base / "runs" / run_name
+
+    for d in (out_dir, ckpt_dir, reports_dir, runs_dir):
+        d.mkdir(parents=True, exist_ok=True)
+
+    csv_path = out_dir / "train_log.csv"
+    md_path  = out_dir / "logs.md"
+
+
     if is_main_process():
-        log_dir = Path(args.log_dir)
-        log_dir.mkdir(parents=True, exist_ok=True)
-        csv_path = log_dir / "train_log.csv"
-        if not csv_path.exists():
-            with open(csv_path, "w", newline="") as f:
-                csv.writer(f).writerow(["epoch", "phase", "loss", "acc"])
+        append_md(md_path, "# Training Log")
+        append_md(md_path, "| epoch | phase | loss | top1 | top5 | lr | imgs/s |")
+        append_md(md_path, "|---:|---|---:|---:|---:|---:|---:|")
+
+    # ---------- Data ----------
+    if args.loader == "dali":
+        train_iter, val_ds = build_dali_iterators(args, device_id=local_rank, world_size=world_size, rank=rank)
+        n_train = count_images(Path(args.data)/"train")
+        steps_per_epoch = math.ceil((n_train / max(world_size,1)) / args.batch_size)
+        if val_ds is None:
+            _, val_ds, _, _, _ = build_torchvision_datasets(args)
+        val_sampler = DistributedSampler(val_ds, num_replicas=world_size, rank=rank, shuffle=False) if is_dist() else None
+        val_loader = DataLoader(val_ds, batch_size=args.eval_batch_size or args.batch_size, shuffle=False, sampler=val_sampler,
+                                num_workers=max(2, args.workers//2), pin_memory=True)
+        train_loader = train_iter
+        num_classes = len(getattr(val_ds, "classes", list(range(args.num_classes))))
+        mean = CACHED_MEAN if CACHED_MEAN is not None else [0.485, 0.456, 0.406]
+        std  = CACHED_STD  if CACHED_STD  is not None else [0.229, 0.224, 0.225]
     else:
-        log_dir = None
-        csv_path = None
-    # ---------------------------------------
+        train_loader, val_loader, classes, mean, std = build_albumentations_loaders(args, world_size, rank)
+        steps_per_epoch = len(train_loader)
+        num_classes = len(classes)
+    if is_main_process():
+        print(f"=> classes: {num_classes} | mean={mean} | std={std}")
 
-    train_ds, val_ds = build_datasets(args)
-    train_sampler = DistributedSampler(train_ds, num_replicas=get_world_size(), rank=get_rank(), shuffle=True) if is_dist() else None
-    val_sampler   = DistributedSampler(val_ds,   num_replicas=get_world_size(), rank=get_rank(), shuffle=False) if (is_dist() and not args.eval_on_single_rank) else None
-
-    train_loader = DataLoader(
-        train_ds, batch_size=args.batch_size,
-        shuffle=(train_sampler is None), sampler=train_sampler,
-        num_workers=args.workers, pin_memory=True,
-        persistent_workers=True, prefetch_factor=4
-    )
-    val_loader = DataLoader(
-        val_ds, batch_size=args.eval_batch_size or args.batch_size,
-        shuffle=False, sampler=val_sampler,
-        num_workers=max(2, args.workers//2), pin_memory=True
-    )
-
-    model = create_model(num_classes=args.num_classes, pretrained=args.pretrained)
+    # ---------- Model ----------
+    #model = create_model(num_classes=num_classes, pretrained=args.pretrained)
+    model = ResNet50(num_classes=num_classes, pretrained=args.pretrained)
     if args.channels_last:
         model = model.to(memory_format=torch.channels_last)
     model = model.to(device)
 
-    # Wrap with DDP if multi-GPU
     if is_dist():
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], output_device=local_rank)
+        model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
 
-    criterion = nn.CrossEntropyLoss()
-    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    # ---------- Optimizer / Scheduler / Loss ----------
+    global_bsz = args.batch_size * max(1, world_size)
+    base_bsz = 256
+    scaled_max_lr = args.max_lr if args.max_lr is not None else 0.1 * (global_bsz / base_bsz)
+    if is_main_process():
+        print(f"=> using max_lr: {scaled_max_lr:.6f} (arg --max-lr {'set' if args.max_lr is not None else 'auto-scale'})")
+
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
+    optimizer = optim.SGD(model.parameters(), lr=scaled_max_lr / args.div_factor,
+                          momentum=0.9, weight_decay=1e-4, nesterov=False)
     scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
+    scheduler = torch.optim.lr_scheduler.OneCycleLR(
+        optimizer,
+        max_lr=scaled_max_lr,
+        epochs=args.epochs,
+        steps_per_epoch=steps_per_epoch,
+        pct_start=args.pct_start,
+        div_factor=args.div_factor,
+        final_div_factor=args.final_div_factor
+    )
+    args.scheduler = scheduler
 
+    # tb_writer = None
+    # if args.use_tb and is_main_process():
+    #     try:
+    #         from torch.utils.tensorboard import SummaryWriter
+    #         tb_writer = SummaryWriter(log_dir=str(out_dir / "runs"))
+    #     except Exception as e:
+    #         print(f"[warn] TensorBoard disabled: {e}")
+
+    tb_writer = None
+    if args.use_tb and is_main_process():
+        try:
+            from torch.utils.tensorboard import SummaryWriter
+            tb_writer = SummaryWriter(log_dir=str(runs_dir))
+        except Exception as e:
+            print(f"[warn] TensorBoard disabled: {e}")
+
+    
+
+    # ---------- Resume ----------
     start_epoch = 0
-    if args.resume:
-        ckpt = load_checkpoint(args.resume, map_location='cpu')
-        def maybe_sd(obj, sd): 
-            try: obj.load_state_dict(sd, strict=True)
+    best_top1 = 0.0
+    if args.resume and Path(args.resume).is_file():
+        ckpt = torch.load(args.resume, map_location='cpu')
+        sd = ckpt.get("model", ckpt)
+        if isinstance(model, DDP):
+            model.module.load_state_dict(sd, strict=False)
+        else:
+            model.load_state_dict(sd, strict=False)
+        if "optimizer" in ckpt:
+            optimizer.load_state_dict(ckpt["optimizer"])
+        if "scaler" in ckpt and args.amp:
+            scaler.load_state_dict(ckpt["scaler"])
+        if "scheduler" in ckpt:
+            try: scheduler.load_state_dict(ckpt["scheduler"])
             except Exception: pass
-        if 'model' in ckpt:
-            if isinstance(model, torch.nn.parallel.DistributedDataParallel):
-                maybe_sd(model.module, ckpt['model'])
-            else:
-                maybe_sd(model, ckpt['model'])
-        if 'opt' in ckpt: optimizer.load_state_dict(ckpt['opt'])
-        if 'scaler' in ckpt and args.amp: scaler.load_state_dict(ckpt['scaler'])
-        start_epoch = int(ckpt.get('epoch', -1)) + 1
+        start_epoch = int(ckpt.get("epoch", -1)) + 1
+        best_top1 = float(ckpt.get("best_top1", 0.0))
         if is_main_process():
-            print(f"=> Resumed from {args.resume} @ epoch {start_epoch}")
+            print(f"=> Resumed from {args.resume} @ epoch {start_epoch} (best_top1={best_top1:.2f})")
 
-    best_acc = 0.0
+    # ---------- Initial sanity val ----------
+    if val_loader is not None:
+        if is_main_process():
+            print("=> initial evaluation")
+        init_val = validate(model, val_loader, device, args, criterion, epoch=-1)
+        if is_main_process():
+            lr_now = optimizer.param_groups[0]['lr']
+            append_csv(csv_path, [-1,"val", f"{init_val['loss']:.6f}", f"{init_val['top1']:.4f}", f"{init_val['top5']:.4f}", f"{lr_now:.6f}", ""])
+            append_md(md_path, f"| -1 | val | {init_val['loss']:.4f} | {init_val['top1']:.2f} | {init_val['top5']:.2f} | {lr_now:.5f} | |")
+
+    # ---------- Train ----------
+    use_mixup  = True   # <-- comment to disable MixUp
+    use_cutmix = False  # <-- set True to try CutMix (don't use both)
+
     for epoch in range(start_epoch, args.epochs):
-        if train_sampler is not None: train_sampler.set_epoch(epoch)
+        if isinstance(train_loader, DataLoader):
+            sampler = train_loader.sampler if hasattr(train_loader, "sampler") else None
+            if isinstance(sampler, DistributedSampler):
+                sampler.set_epoch(epoch)
 
-        train_stats = train_one_epoch(model, train_loader, optimizer, scaler, device, epoch, args, criterion)
-        val_stats = validate(model, val_loader, device, args, criterion) if ((not args.eval_on_single_rank) or is_main_process()) else {"acc": 0.0, "loss": 0.0}
-
-        # --- append CSV (rank-0 only) ---
-        if is_main_process():
-            with open(csv_path, "a", newline="") as f:
-                w = csv.writer(f)
-                w.writerow([epoch, "train", f"{train_stats['loss']:.6f}", f"{train_stats['acc']:.4f}"])
-                w.writerow([epoch, "val",   f"{val_stats['loss']:.6f}",   f"{val_stats['acc']:.4f}"])
-        # ---------------------------------
+        train_stats = train_one_epoch(model, train_loader, optimizer, scaler, device, epoch, args, criterion, use_mixup, use_cutmix)
+        val_stats = validate(model, val_loader, device, args, criterion, epoch) if val_loader is not None else {"loss":0.0,"top1":0.0,"top5":0.0}
 
         if is_main_process():
-            is_best = val_stats.get("acc", 0.0) > best_acc
-            best_acc = max(best_acc, val_stats.get("acc", 0.0))
-            save_checkpoint({
+            lr_now = optimizer.param_groups[0]['lr']
+            append_csv(csv_path, [epoch,"train", f"{train_stats['loss']:.6f}", f"{train_stats['top1']:.4f}", f"{train_stats['top5']:.4f}", f"{lr_now:.6f}", f"{train_stats['imgs_per_sec']:.0f}"])
+            append_csv(csv_path, [epoch,"val",   f"{val_stats['loss']:.6f}",   f"{val_stats['top1']:.4f}",   f"{val_stats['top5']:.4f}",   f"{lr_now:.6f}", ""])
+            append_md(md_path, f"| {epoch} | train | {train_stats['loss']:.4f} | {train_stats['top1']:.2f} | {train_stats['top5']:.2f} | {lr_now:.5f} | {train_stats['imgs_per_sec']:.0f} |")
+            append_md(md_path, f"| {epoch} | val | {val_stats['loss']:.4f} | {val_stats['top1']:.2f} | {val_stats['top5']:.2f} | {lr_now:.5f} | |")
+            if tb_writer:
+                tb_writer.add_scalar("train/loss", train_stats["loss"], epoch)
+                tb_writer.add_scalar("train/top1", train_stats["top1"], epoch)
+                tb_writer.add_scalar("train/top5", train_stats["top5"], epoch)
+                tb_writer.add_scalar("val/loss", val_stats["loss"], epoch)
+                tb_writer.add_scalar("val/top1", val_stats["top1"], epoch)
+                tb_writer.add_scalar("val/top5", val_stats["top5"], epoch)
+
+            state = {
                 "epoch": epoch,
-                "model": model.module.state_dict() if isinstance(model, torch.nn.parallel.DistributedDataParallel) else model.state_dict(),
-                "opt": optimizer.state_dict(),
+                "model": (model.module.state_dict() if isinstance(model, DDP) else model.state_dict()),
+                "optimizer": optimizer.state_dict(),
                 "scaler": scaler.state_dict() if args.amp else {},
+                "scheduler": scheduler.state_dict(),
                 "args": vars(args),
-                "best_acc": best_acc
-            }, args.log_dir, is_best=is_best)
+                "best_top1": float(best_top1)
+            }
+            torch.save(state, ckpt_dir / "last_epoch.pth")
+            is_best = val_stats["top1"] > best_top1
+            if is_best:
+                best_top1 = val_stats["top1"]
+                torch.save(state, ckpt_dir / f"best_acc_epoch{epoch:03d}.pth")
+
+    if is_main_process():
+        try:
+            import pandas as pd
+            df = pd.read_csv(csv_path)
+            plt.figure()
+            df_train = df[df.phase=="train"]; df_val = df[df.phase=="val"]
+            plt.plot(df_train.epoch, df_train.top1, label="train_top1")
+            plt.plot(df_val.epoch, df_val.top1, label="val_top1")
+            plt.xlabel("epoch"); plt.ylabel("Top-1 (%)"); plt.legend(); plt.grid(True, alpha=0.3)
+            #plt.savefig(out_dir / "reports" / "accuracy_curve.png", bbox_inches="tight"); plt.close()
+            plt.savefig(reports_dir / "accuracy_curve.png", bbox_inches="tight"); plt.close()
+
+            plt.figure()
+            plt.plot(df_train.epoch, df_train.loss, label="train_loss")
+            plt.plot(df_val.epoch, df_val.loss, label="val_loss")
+            plt.xlabel("epoch"); plt.ylabel("loss"); plt.legend(); plt.grid(True, alpha=0.3)
+            #plt.savefig(out_dir / "reports" / "loss_curve.png", bbox_inches="tight"); plt.close()
+            plt.savefig(reports_dir / "loss_curve.png", bbox_inches="tight"); plt.close()
+        except Exception as e:
+            print(f"[warn] plotting failed: {e}")
+            # ---- Model summary (console + file) ----
+        try:
+            if summary is None:
+                print("[warn] torchinfo not installed; run: pip install \"torchinfo>=1.8.0\"")
+            else:
+                bs = max(1, args.batch_size)
+                chw = (3, args.crop_size, args.crop_size)
+                mdl = model.module if isinstance(model, DDP) else model
+
+                # print the nice layer table to stdout
+                sm = summary(
+                    mdl,
+                    input_size=(bs, *chw),
+                    verbose=1,
+                    col_names=("input_size","output_size","num_params","kernel_size"),
+                    depth=5
+                )
+                # save same table to file
+                with open(reports_dir / "model_summary.txt","w") as f:
+                    f.write(str(sm))
+                print(f"=> model summary saved to {reports_dir}/model_summary.txt")
+        except Exception as e:
+            print(f"[warn] model summary failed: {e}")
+
+        # try:
+        #     from torchinfo import summary
+        #     dummy = torch.zeros(1,3,args.crop_size,args.crop_size).to(device)
+        #     if args.channels_last: dummy = dummy.to(memory_format=torch.channels_last)
+        #     sm = summary(model.module if isinstance(model, DDP) else model, input_data=dummy, verbose=0)
+        #     # with open(out_dir / "reports" / "model_summary.txt","w") as f:
+        #     #     f.write(str(sm))
+        #     with open(reports_dir / "model_summary.txt","w") as f:
+        #         f.write(str(sm))
+
+        # except Exception as e:
+        #     print(f"[warn] model summary failed: {e}")
+
+        if args.do_report and 'val_loader' in locals() and val_loader is not None:
+            try:
+                from sklearn.metrics import classification_report, confusion_matrix
+                y_true, y_pred = [], []
+                with torch.no_grad():
+                    mdl = model.module if isinstance(model, DDP) else model
+                    mdl.eval()
+                    for images, targets in val_loader:
+                        images = images.to(device, non_blocking=True)
+                        targets = targets.to(device, non_blocking=True)
+                        logits = mdl(images)
+                        pred = torch.argmax(logits, dim=1)
+                        y_true.extend(targets.cpu().numpy().tolist())
+                        y_pred.extend(pred.cpu().numpy().tolist())
+                import pandas as pd
+                cm = confusion_matrix(y_true, y_pred)
+                # pd.DataFrame(cm).to_csv(out_dir / "reports" / "confusion_matrix.csv", index=False)
+                # classes = getattr(val_loader.dataset, "classes", [str(i) for i in range(args.num_classes)])
+                # with open(out_dir / "reports" / "classification_report.txt","w") as f:
+                #     f.write(classification_report(y_true, y_pred, target_names=classes, zero_division=0))
+                pd.DataFrame(cm).to_csv(reports_dir / "confusion_matrix.csv", index=False)
+                classes = getattr(val_loader.dataset, "classes", [str(i) for i in range(args.num_classes)])
+                with open(reports_dir / "classification_report.txt","w") as f:
+                    f.write(classification_report(y_true, y_pred, target_names=classes, zero_division=0))
+
+            except Exception as e:
+                print(f"[warn] report failed: {e}")
 
     cleanup_ddp()
+    if tb_writer:
+        try:
+            tb_writer.close()
+        except Exception:
+            pass
 
 if __name__ == "__main__":
     main()

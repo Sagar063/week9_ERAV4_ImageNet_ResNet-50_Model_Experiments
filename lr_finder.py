@@ -10,12 +10,13 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch_lr_finder import LRFinder
-from torchvision.models import resnet50
+#from torchvision.models import resnet50
+from model import ResNet50
 
 from dataset.imagenet import make_loaders
 # from dataset.imagenet_mini import make_loaders
 import fire
-
+import numpy as np, json, os, time
 
 # def find_lr(
 #     #data_root="data/imagenet_mini",
@@ -66,7 +67,8 @@ def find_lr(
     )
 
 
-    model = resnet50(weights=None, num_classes=len(classes)).to(device)
+    #model = resnet50(weights=None, num_classes=len(classes)).to(device)
+    model = ResNet50(num_classes=len(classes), pretrained=False).to(device)
     criterion = nn.CrossEntropyLoss().to(device)
     optimizer = optim.SGD(model.parameters(), lr=start_lr, momentum=momentum, weight_decay=weight_decay)
 
@@ -84,10 +86,80 @@ def find_lr(
     plt.close()
     print(f"=> LR curve saved to: {filepath}")
 
+    
+
+    def _fallback_suggestion(history):
+        """Pick LR at steepest loss descent on log10(LR)."""
+        lrs = np.array(history["lr"])
+        losses = np.array(history["loss"])
+        # filter bad values
+        mask = np.isfinite(lrs) & np.isfinite(losses)
+        lrs, losses = lrs[mask], losses[mask]
+        if len(lrs) < 5:
+            return None
+        # gradient w.r.t. log10(lr)
+        grads = np.gradient(losses, np.log10(lrs))
+        idx = np.nanargmin(grads)  # steepest negative slope
+        return float(lrs[idx])
+
+    # ---- Save suggested LR robustly ----
+    suggested = None
     try:
-        print("=> Suggested LR:", lr_finder.suggestion())
+        suggested = lr_finder.suggestion()
+        if suggested is not None:
+            suggested = float(suggested)
     except Exception:
-        pass
+        suggested = None
+
+    if suggested is None:
+        try:
+            suggested = _fallback_suggestion(lr_finder.history)
+        except Exception:
+            suggested = None
+
+    if suggested is None:
+        # final fallback: min(loss) LR
+        try:
+            lrs = np.array(lr_finder.history["lr"])
+            losses = np.array(lr_finder.history["loss"])
+            idx = int(np.nanargmin(losses))
+            suggested = float(lrs[idx])
+        except Exception:
+            pass
+
+    out_txt = os.path.join(output_dir, "lr_suggestion.txt")
+    out_json = os.path.join(output_dir, "lr_suggestion.json")
+    if suggested is not None:
+        with open(out_txt, "w") as f:
+            f.write(f"{suggested}\n")
+        with open(out_json, "w") as f:
+            json.dump({
+                "suggested_lr": suggested,
+                "start_lr": start_lr,
+                "end_lr": end_lr,
+                "num_iter": num_iter,
+                "timestamp": time.strftime("%Y%m%d_%H%M%S")
+            }, f, indent=2)
+        print("=> Suggested LR:", f"{suggested:.2E}")
+    else:
+        print("=> Suggested LR: (not available)")
+
+    # Save suggested LR to text/json for automation
+    # try:
+    #     suggested = float(lr_finder.suggestion())
+    #     with open(os.path.join(output_dir, "lr_suggestion.txt"), "w") as f:
+    #         f.write(f"{suggested}\n")
+    #     with open(os.path.join(output_dir, "lr_suggestion.json"), "w") as f:
+    #         import json
+    #         json.dump({"suggested_lr": suggested,
+    #                    "start_lr": start_lr,
+    #                    "end_lr": end_lr,
+    #                    "num_iter": num_iter,
+    #                    "timestamp": ts}, f, indent=2)
+    #     print("=> Suggested LR:", suggested)
+    # except Exception:
+    #     print("=> Suggested LR: (not available)")
+
 
     lr_finder.reset()
 

@@ -11,10 +11,15 @@ wheel>=0.44.0
 torch==2.4.1+cu121
 torchvision==0.19.1+cu121
 torchaudio==2.4.1+cu121
+# ---------- Utility and training helpers ----------
+torchinfo>=1.8.0
+torch-lr-finder>=0.2.1,<0.3.0
+fire>=0.6.0
 
 # ---------- Image / Augmentation ----------
 timm==1.0.9
 albumentations==1.4.14
+albucore==0.0.13
 opencv-python==4.10.0.84
 Pillow>=10.3.0
 
