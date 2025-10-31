@@ -13,7 +13,7 @@ Merged trainer:  single-GPU "good hygiene" + AWS speed (DDP/DALI).
            reports/confusion_matrix.csv, reports/model_summary.txt
 - Checkpoints: checkpoints/last_epoch.pth, checkpoints/best_acc_epochXXX.pth
 - Optional TensorBoard (--use-tb), optional classification report (--do-report)
-- MixUp/CutMix toggles via booleans near the train loop (no argparse needed)
+- W&B: enable with --wandb (+ optional project/entity/tags/offline). Per-epoch logs, artifacts for ckpts & reports.
 """
 
 import os, sys, time, math, argparse, random, csv, json
@@ -40,6 +40,12 @@ try:
     from torchinfo import summary
 except Exception:
     summary = None
+
+# --- W&B: optional import (safe if not used) ---
+try:
+    import wandb  # only used when --wandb is set
+except Exception:
+    wandb = None
 
 # cache hooks visible to helper fns
 CACHED_MEAN = None
@@ -69,15 +75,6 @@ def setup_ddp(backend="nccl", timeout_seconds=36000):
             dist.init_process_group(backend=backend)
         torch.cuda.set_device(int(os.environ.get("LOCAL_RANK", 0)))
 
-# def setup_ddp(backend="nccl", timeout_seconds=36000):
-#     if "RANK" in os.environ and "WORLD_SIZE" in os.environ:
-#         # PyTorch 2.4+ supports timedelta for timeout; fallback for older
-#         try:
-#             dist.init_process_group(backend=backend, timeout=torch.timedelta(seconds=timeout_seconds))
-#         except Exception:
-#             dist.init_process_group(backend=backend)
-#         torch.cuda.set_device(int(os.environ.get("LOCAL_RANK", 0)))
-
 def cleanup_ddp():
     if is_dist():
         try:
@@ -98,12 +95,6 @@ def set_seed(seed: int = 42):
         torch.set_float32_matmul_precision("high")
     except Exception:
         pass
-
-# def ensure_dirs(out_dir: Path):
-#     (out_dir / "out").mkdir(parents=True, exist_ok=True)
-#     (out_dir / "reports").mkdir(parents=True, exist_ok=True)
-#     (out_dir / "checkpoints").mkdir(parents=True, exist_ok=True)
-#     (out_dir / "runs").mkdir(parents=True, exist_ok=True)
 
 def append_csv(path: Path, row: List):
     first = not path.exists()
@@ -153,7 +144,6 @@ def count_images(root: Path) -> int:
 
 def build_dali_iterators(args, device_id, world_size, rank):
     from dataset.imagenet_dali import dali_loader
-    #train_iter = dali_loader(str(Path(args.data)/"train"), args.batch_size, args.workers, device_id, world_size, rank, train=True)
     train_iter = dali_loader(str(Path(args.data)/"train"),
                             args.batch_size, args.workers,
                             device_id, world_size, rank,
@@ -178,12 +168,6 @@ def build_albumentations_loaders(args, world_size, rank):
     return train_loader, val_loader, classes, mean, std
 
 # ---------------------- Model / Metrics ----------------------
-# def create_model(num_classes=1000, pretrained=False):
-#     m = resnet50(weights=None if not pretrained else torchvision.models.ResNet50_Weights.IMAGENET1K_V1)
-#     if num_classes != 1000:
-#         m.fc = nn.Linear(m.fc.in_features, num_classes)
-#     return m
-
 @torch.no_grad()
 def accuracy_topk(output, target, topk=(1,5)):
     maxk = max(topk)
@@ -247,9 +231,6 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
         else:
             images, targets = batch
                     
-        # if i == 0 and is_main_process():
-        #     print(f"=> DALI batch0: images {tuple(images.shape)} (expect [N,3,{args.crop_size},{args.crop_size}])")
-
         if args.channels_last:
             images = images.to(device=device, non_blocking=True, memory_format=torch.channels_last)
         else:
@@ -362,8 +343,17 @@ def parse_args():
     p.add_argument('--pct-start', type=float, default=0.3)
     p.add_argument('--div-factor', type=float, default=25.0)
     p.add_argument('--final-div-factor', type=float, default=1e4)
+
     # Classification report / confusion matrix
     p.add_argument('--do-report', action='store_true', help='Generate classification_report and confusion_matrix at end')
+
+    # --- W&B: CLI flags (all optional) ---
+    p.add_argument('--wandb', action='store_true', help='Enable Weights & Biases logging (rank-0 only).')
+    p.add_argument('--wandb-project', type=str, default='imagenet1k_runs', help='wandb project name.')
+    p.add_argument('--wandb-entity', type=str, default=None, help='wandb entity/org (optional).')
+    p.add_argument('--wandb-tags', type=str, default='', help='comma-separated list of tags (optional).')
+    p.add_argument('--wandb-offline', action='store_true', help='WANDB_MODE=offline (sync later).')
+
     return p.parse_args()
 
 # ---------------------- Main ----------------------
@@ -388,12 +378,6 @@ def main():
             cached_mean, cached_std = s.get("mean"), s.get("std")
     global CACHED_MEAN, CACHED_STD
     CACHED_MEAN, CACHED_STD = cached_mean, cached_std
-    # out_dir = Path(args.out_dir)
-    # ensure_dirs(out_dir)
-    # csv_path = out_dir / "out" / "train_log.csv"
-    # md_path  = out_dir / "out" / "logs.md"
-    # ckpt_dir = out_dir / "checkpoints"
-    # reports_dir = out_dir / "reports"
 
     # Interpret --out-dir as the RUN NAME (e.g., "g5x_1gpu_run")
     run_name   = Path(args.out_dir).name
@@ -409,11 +393,29 @@ def main():
     csv_path = out_dir / "train_log.csv"
     md_path  = out_dir / "logs.md"
 
-
     if is_main_process():
         append_md(md_path, "# Training Log")
         append_md(md_path, "| epoch | phase | loss | top1 | top5 | lr | imgs/s |")
         append_md(md_path, "|---:|---|---:|---:|---:|---:|---:|")
+
+    # --- W&B: init (rank-0 only) ---
+    wb_run = None
+    if args.wandb and is_main_process() and wandb is not None:
+        if args.wandb_offline:
+            os.environ['WANDB_MODE'] = 'offline'
+        _tags = [t.strip() for t in args.wandb_tags.split(',') if t.strip()]
+        try:
+            wb_run = wandb.init(
+                project=args.wandb_project,
+                entity=args.wandb_entity,
+                name=run_name,
+                tags=_tags or None,
+                config=vars(args),
+                save_code=True
+            )
+        except Exception as e:
+            print(f"[W&B] init failed: {e}")
+            wb_run = None
 
     # ---------- Data ----------
     if args.loader == "dali":
@@ -437,7 +439,6 @@ def main():
         print(f"=> classes: {num_classes} | mean={mean} | std={std}")
 
     # ---------- Model ----------
-    #model = create_model(num_classes=num_classes, pretrained=args.pretrained)
     model = ResNet50(num_classes=num_classes, pretrained=args.pretrained)
     if args.channels_last:
         model = model.to(memory_format=torch.channels_last)
@@ -468,23 +469,14 @@ def main():
     )
     args.scheduler = scheduler
 
-    # tb_writer = None
-    # if args.use_tb and is_main_process():
-    #     try:
-    #         from torch.utils.tensorboard import SummaryWriter
-    #         tb_writer = SummaryWriter(log_dir=str(out_dir / "runs"))
-    #     except Exception as e:
-    #         print(f"[warn] TensorBoard disabled: {e}")
-
+    # TensorBoard (optional)
     tb_writer = None
     if args.use_tb and is_main_process():
         try:
             from torch.utils.tensorboard import SummaryWriter
             tb_writer = SummaryWriter(log_dir=str(runs_dir))
         except Exception as e:
-            print(f"[warn] TensorBoard disabled: {e}")
-
-    
+            print(f("[warn] TensorBoard disabled: {e}"))
 
     # ---------- Resume ----------
     start_epoch = 0
@@ -517,6 +509,18 @@ def main():
             lr_now = optimizer.param_groups[0]['lr']
             append_csv(csv_path, [-1,"val", f"{init_val['loss']:.6f}", f"{init_val['top1']:.4f}", f"{init_val['top5']:.4f}", f"{lr_now:.6f}", ""])
             append_md(md_path, f"| -1 | val | {init_val['loss']:.4f} | {init_val['top1']:.2f} | {init_val['top5']:.2f} | {lr_now:.5f} | |")
+            # --- W&B: log initial val ---
+            if wb_run is not None:
+                try:
+                    wandb.log({
+                        'epoch': -1,
+                        'val/loss': init_val['loss'],
+                        'val/top1': init_val['top1'],
+                        'val/top5': init_val['top5'],
+                        'lr': lr_now
+                    }, step=-1)
+                except Exception as e:
+                    print(f"[W&B] initial log failed: {e}")
 
     # ---------- Train ----------
     use_mixup  = True   # <-- comment to disable MixUp
@@ -545,6 +549,23 @@ def main():
                 tb_writer.add_scalar("val/top1", val_stats["top1"], epoch)
                 tb_writer.add_scalar("val/top5", val_stats["top5"], epoch)
 
+            # --- W&B: per-epoch logging ---
+            if wb_run is not None:
+                try:
+                    wandb.log({
+                        'epoch': epoch,
+                        'lr': lr_now,
+                        'train/loss': train_stats['loss'],
+                        'train/top1': train_stats['top1'],
+                        'train/top5': train_stats['top5'],
+                        'train/imgs_per_sec': train_stats['imgs_per_sec'],
+                        'val/loss': val_stats['loss'],
+                        'val/top1': val_stats['top1'],
+                        'val/top5': val_stats['top5']
+                    }, step=epoch)
+                except Exception as e:
+                    print(f"[W&B] epoch log failed: {e}")
+
             state = {
                 "epoch": epoch,
                 "model": (model.module.state_dict() if isinstance(model, DDP) else model.state_dict()),
@@ -560,6 +581,15 @@ def main():
                 best_top1 = val_stats["top1"]
                 torch.save(state, ckpt_dir / f"best_acc_epoch{epoch:03d}.pth")
 
+                # --- W&B: upload best checkpoint as artifact (optional) ---
+                if wb_run is not None:
+                    try:
+                        art = wandb.Artifact(f'{run_name}-ckpts', type='model')
+                        art.add_file(str(ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"))
+                        wandb.log_artifact(art)
+                    except Exception as e:
+                        print(f"[W&B] artifact upload skipped: {e}")
+
     if is_main_process():
         try:
             import pandas as pd
@@ -569,18 +599,17 @@ def main():
             plt.plot(df_train.epoch, df_train.top1, label="train_top1")
             plt.plot(df_val.epoch, df_val.top1, label="val_top1")
             plt.xlabel("epoch"); plt.ylabel("Top-1 (%)"); plt.legend(); plt.grid(True, alpha=0.3)
-            #plt.savefig(out_dir / "reports" / "accuracy_curve.png", bbox_inches="tight"); plt.close()
             plt.savefig(reports_dir / "accuracy_curve.png", bbox_inches="tight"); plt.close()
 
             plt.figure()
             plt.plot(df_train.epoch, df_train.loss, label="train_loss")
             plt.plot(df_val.epoch, df_val.loss, label="val_loss")
             plt.xlabel("epoch"); plt.ylabel("loss"); plt.legend(); plt.grid(True, alpha=0.3)
-            #plt.savefig(out_dir / "reports" / "loss_curve.png", bbox_inches="tight"); plt.close()
             plt.savefig(reports_dir / "loss_curve.png", bbox_inches="tight"); plt.close()
         except Exception as e:
             print(f"[warn] plotting failed: {e}")
-            # ---- Model summary (console + file) ----
+
+        # ---- Model summary (console + file) ----
         try:
             if summary is None:
                 print("[warn] torchinfo not installed; run: pip install \"torchinfo>=1.8.0\"")
@@ -588,8 +617,6 @@ def main():
                 bs = max(1, args.batch_size)
                 chw = (3, args.crop_size, args.crop_size)
                 mdl = model.module if isinstance(model, DDP) else model
-
-                # print the nice layer table to stdout
                 sm = summary(
                     mdl,
                     input_size=(bs, *chw),
@@ -597,29 +624,15 @@ def main():
                     col_names=("input_size","output_size","num_params","kernel_size"),
                     depth=5
                 )
-                # save same table to file
                 with open(reports_dir / "model_summary.txt","w") as f:
                     f.write(str(sm))
                 print(f"=> model summary saved to {reports_dir}/model_summary.txt")
         except Exception as e:
             print(f"[warn] model summary failed: {e}")
 
-        # try:
-        #     from torchinfo import summary
-        #     dummy = torch.zeros(1,3,args.crop_size,args.crop_size).to(device)
-        #     if args.channels_last: dummy = dummy.to(memory_format=torch.channels_last)
-        #     sm = summary(model.module if isinstance(model, DDP) else model, input_data=dummy, verbose=0)
-        #     # with open(out_dir / "reports" / "model_summary.txt","w") as f:
-        #     #     f.write(str(sm))
-        #     with open(reports_dir / "model_summary.txt","w") as f:
-        #         f.write(str(sm))
-
-        # except Exception as e:
-        #     print(f"[warn] model summary failed: {e}")
-
         if args.do_report and 'val_loader' in locals() and val_loader is not None:
             try:
-                from sklearn.metrics import classification_report, confusion_matrix
+                from sklearn.metrics import classification_report, confusion_matrix, precision_score, recall_score, f1_score
                 y_true, y_pred = [], []
                 with torch.no_grad():
                     mdl = model.module if isinstance(model, DDP) else model
@@ -633,17 +646,45 @@ def main():
                         y_pred.extend(pred.cpu().numpy().tolist())
                 import pandas as pd
                 cm = confusion_matrix(y_true, y_pred)
-                # pd.DataFrame(cm).to_csv(out_dir / "reports" / "confusion_matrix.csv", index=False)
-                # classes = getattr(val_loader.dataset, "classes", [str(i) for i in range(args.num_classes)])
-                # with open(out_dir / "reports" / "classification_report.txt","w") as f:
-                #     f.write(classification_report(y_true, y_pred, target_names=classes, zero_division=0))
                 pd.DataFrame(cm).to_csv(reports_dir / "confusion_matrix.csv", index=False)
                 classes = getattr(val_loader.dataset, "classes", [str(i) for i in range(args.num_classes)])
                 with open(reports_dir / "classification_report.txt","w") as f:
                     f.write(classification_report(y_true, y_pred, target_names=classes, zero_division=0))
 
+                # --- W&B: macro P/R/F1 per-epoch final snapshot (logged once here as summary) ---
+                if wb_run is not None:
+                    try:
+                        prec = precision_score(y_true, y_pred, average='macro', zero_division=0)
+                        rec  = recall_score(y_true, y_pred, average='macro', zero_division=0)
+                        f1   = f1_score(y_true, y_pred, average='macro', zero_division=0)
+                        wandb.summary['val/macro_precision'] = prec
+                        wandb.summary['val/macro_recall'] = rec
+                        wandb.summary['val/macro_f1'] = f1
+                        # also save files for convenience
+                        wandb.save(str(reports_dir / "confusion_matrix.csv"))
+                        wandb.save(str(reports_dir / "classification_report.txt"))
+                    except Exception as e:
+                        print(f"[W&B] macro metrics upload skipped: {e}")
             except Exception as e:
                 print(f"[warn] report failed: {e}")
+
+        # --- W&B: upload CSV + reports as artifact at the end (optional) ---
+        if wb_run is not None:
+            try:
+                art = wandb.Artifact(f'{run_name}-reports', type='report')
+                csv_p = str(csv_path)
+                if os.path.isfile(csv_p):
+                    art.add_file(csv_p)
+                if os.path.isdir(reports_dir):
+                    art.add_dir(str(reports_dir))
+                wandb.log_artifact(art)
+            except Exception as e:
+                print(f"[W&B] report artifact upload skipped: {e}")
+            finally:
+                try:
+                    wb_run.finish()
+                except Exception:
+                    pass
 
     cleanup_ddp()
     if tb_writer:
