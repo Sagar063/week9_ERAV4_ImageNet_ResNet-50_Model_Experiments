@@ -1,5 +1,0 @@
-[default]
-entity = sagar1doshi-bits-pilani
-project = imagenet1k_runs
-base_url = https://api.wandb.ai
-

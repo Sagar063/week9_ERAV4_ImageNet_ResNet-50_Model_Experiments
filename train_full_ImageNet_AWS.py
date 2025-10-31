@@ -20,7 +20,9 @@ import os, sys, time, math, argparse, random, csv, json
 from pathlib import Path
 from typing import Tuple, List
 import numpy as np
-
+import json, pandas as pd
+from sklearn.metrics import classification_report, confusion_matrix
+import torch.distributed as dist
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -28,7 +30,6 @@ import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
-
 import torchvision
 from torchvision import transforms
 from torchvision.models import resnet50
@@ -188,6 +189,17 @@ def all_reduce_sum(value: float, device):
     dist.all_reduce(t, op=dist.ReduceOp.SUM)
     return t.item()
 
+
+def progress_enumerator(loader, desc, args):
+    """Return tqdm(enumerate(loader)) when --show-progress on (rank-0), else plain enumerate."""
+    if is_main_process() and getattr(args, 'show_progress', False):
+        try:
+            from tqdm import tqdm
+            return tqdm(enumerate(loader), total=len(loader), ncols=90, desc=desc)
+        except Exception:
+            pass
+    return enumerate(loader)
+
 # ---------------------- Training/Eval ----------------------
 def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, criterion, use_mixup, use_cutmix):
     model.train()
@@ -222,7 +234,7 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
         y_a, y_b = y, y[index]
         return x, y_a, y_b, lam
 
-    for i, batch in enumerate(loader):
+    for i, batch in progress_enumerator(loader, f"Train {epoch:03d}", args):
         # Support DALIGenericIterator vs PyTorch loader
         if isinstance(batch, list) or (isinstance(batch, tuple) and len(batch) == 1):
             data = batch[0]
@@ -247,7 +259,8 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
 
         optimizer.zero_grad(set_to_none=True)
         t_iter0 = time.time()
-        with torch.cuda.amp.autocast(enabled=args.amp):
+        #with torch.cuda.amp.autocast(enabled=args.amp):
+        with torch.amp.autocast('cuda', enabled=args.amp):
             outputs = model(images)
             if use_mixup or use_cutmix:
                 loss = mixup_criterion(criterion, outputs, targets_a, targets_b, lam)
@@ -268,7 +281,30 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
         total += B
         top1_sum += t1 * B
         top5_sum += t5 * B
+
+        # tqdm postfix (only when enabled)
+        if is_main_process() and getattr(args, 'show_progress', False):
+            try:
+                _set = getattr(locals().get('loop', None), 'set_postfix_str', None)
+                if callable(_set):
+                    _set(f"loss={loss.item():.3f} top1={t1:.2f}")
+            except Exception:
+                pass
         imgs_sum += imgs_per_sec
+
+        # tqdm postfix (only when enabled)
+        if is_main_process() and getattr(args, 'show_progress', False):
+            try:
+                loop = locals().get('loop')  # if present
+            except Exception:
+                loop = None
+            try:
+                # best-effort: if current iterator is a tqdm instance
+                _set = getattr(loop if 'loop' in locals() else None, 'set_postfix_str', None)
+                if callable(_set):
+                    _set(f"loss={loss.item():.3f} top1={t1:.2f}")
+            except Exception:
+                pass
 
     device = next(model.parameters()).device
     total_global = all_reduce_sum(float(total), device)
@@ -287,14 +323,16 @@ def validate(model, loader, device, args, criterion, epoch):
     total = 0
     top1_sum = 0.0
     top5_sum = 0.0
-    for batch in loader:
+    loop = progress_enumerator(loader, f"Val {epoch:03d}", args)
+    for i, batch in loop:
         images, targets = batch
         if args.channels_last:
             images = images.to(device=device, non_blocking=True, memory_format=torch.channels_last)
         else:
             images = images.to(device=device, non_blocking=True)
         targets = targets.to(device=device, non_blocking=True)
-        with torch.cuda.amp.autocast(enabled=args.amp):
+        #with torch.cuda.amp.autocast(enabled=args.amp):
+        with torch.amp.autocast('cuda', enabled=args.amp):
             outputs = model(images)
             loss = criterion(outputs, targets)
 
@@ -304,6 +342,15 @@ def validate(model, loader, device, args, criterion, epoch):
         total += B
         top1_sum += t1 * B
         top5_sum += t5 * B
+
+        # tqdm postfix (only when enabled)
+        if is_main_process() and getattr(args, 'show_progress', False):
+            try:
+                _set = getattr(locals().get('loop', None), 'set_postfix_str', None)
+                if callable(_set):
+                    _set(f"loss={loss.item():.3f} top1={t1:.2f}")
+            except Exception:
+                pass
 
     device = next(model.parameters()).device
     total_global = all_reduce_sum(float(total), device)
@@ -353,6 +400,9 @@ def parse_args():
     p.add_argument('--wandb-entity', type=str, default=None, help='wandb entity/org (optional).')
     p.add_argument('--wandb-tags', type=str, default='', help='comma-separated list of tags (optional).')
     p.add_argument('--wandb-offline', action='store_true', help='WANDB_MODE=offline (sync later).')
+
+        # Debug / progress control
+    p.add_argument('--show-progress', action='store_true', help='Show per-batch tqdm progress during train/val (debug mode)')
 
     return p.parse_args()
 
@@ -457,7 +507,8 @@ def main():
     criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
     optimizer = optim.SGD(model.parameters(), lr=scaled_max_lr / args.div_factor,
                           momentum=0.9, weight_decay=1e-4, nesterov=False)
-    scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
+    #scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
+    scaler = torch.amp.GradScaler('cuda', enabled=args.amp)
     scheduler = torch.optim.lr_scheduler.OneCycleLR(
         optimizer,
         max_lr=scaled_max_lr,
@@ -630,10 +681,13 @@ def main():
         except Exception as e:
             print(f"[warn] model summary failed: {e}")
 
-        if args.do_report and 'val_loader' in locals() and val_loader is not None:
+        # ===== BEGIN: Human-readable reporting for ImageNet =====
+        if getattr(args, "do_report", False) and 'val_loader' in locals() and val_loader is not None:
             try:
-                from sklearn.metrics import classification_report, confusion_matrix, precision_score, recall_score, f1_score
-                y_true, y_pred = [], []
+                
+
+                # (1) collect predictions / targets
+                y_true_local, y_pred_local = [], []
                 with torch.no_grad():
                     mdl = model.module if isinstance(model, DDP) else model
                     mdl.eval()
@@ -642,31 +696,104 @@ def main():
                         targets = targets.to(device, non_blocking=True)
                         logits = mdl(images)
                         pred = torch.argmax(logits, dim=1)
-                        y_true.extend(targets.cpu().numpy().tolist())
-                        y_pred.extend(pred.cpu().numpy().tolist())
-                import pandas as pd
-                cm = confusion_matrix(y_true, y_pred)
-                pd.DataFrame(cm).to_csv(reports_dir / "confusion_matrix.csv", index=False)
-                classes = getattr(val_loader.dataset, "classes", [str(i) for i in range(args.num_classes)])
-                with open(reports_dir / "classification_report.txt","w") as f:
-                    f.write(classification_report(y_true, y_pred, target_names=classes, zero_division=0))
+                        y_true_local.extend(targets.cpu().tolist())
+                        y_pred_local.extend(pred.cpu().tolist())
 
-                # --- W&B: macro P/R/F1 per-epoch final snapshot (logged once here as summary) ---
-                if wb_run is not None:
+                # (2) gather across ranks if DDP
+                def _gather_all(x):
+                    if dist.is_available() and dist.is_initialized():
+                        t = torch.tensor(x, dtype=torch.int64, device=device)
+                        world = dist.get_world_size()
+                        sizes = [torch.tensor(0, device=device) for _ in range(world)]
+                        dist.all_gather(sizes, torch.tensor([t.numel()], device=device))
+                        maxlen = int(max(s.item() for s in sizes))
+                        if t.numel() < maxlen:
+                            pad = torch.full((maxlen - t.numel(),), -1, dtype=torch.int64, device=device)
+                            t = torch.cat([t, pad], dim=0)
+                        outs = [torch.empty_like(t) for _ in range(world)]
+                        dist.all_gather(outs, t)
+                        res = []
+                        for i, out in enumerate(outs):
+                            valid = int(sizes[i].item())
+                            res.extend(out[:valid].cpu().tolist())
+                        return res
+                    return x
+
+                y_true = _gather_all(y_true_local)
+                y_pred = _gather_all(y_pred_local)
+
+                # (3) only rank-0 writes
+                is_main = (not dist.is_available()) or (not dist.is_initialized()) or dist.get_rank() == 0
+                if is_main:
+                    # (4) load mapping
+                    synset2name = {}
                     try:
-                        prec = precision_score(y_true, y_pred, average='macro', zero_division=0)
-                        rec  = recall_score(y_true, y_pred, average='macro', zero_division=0)
-                        f1   = f1_score(y_true, y_pred, average='macro', zero_division=0)
-                        wandb.summary['val/macro_precision'] = prec
-                        wandb.summary['val/macro_recall'] = rec
-                        wandb.summary['val/macro_f1'] = f1
-                        # also save files for convenience
-                        wandb.save(str(reports_dir / "confusion_matrix.csv"))
-                        wandb.save(str(reports_dir / "classification_report.txt"))
+                        with open("utils/imagenet_class_index.json") as f:
+                            idx2pair = json.load(f)
+                        for _, (syn, human) in idx2pair.items():
+                            synset2name[syn] = human
                     except Exception as e:
-                        print(f"[W&B] macro metrics upload skipped: {e}")
+                        print(f"[warn] could not load utils/imagenet_class_index.json: {e}")
+
+                    # (5) convert class folders → readable names
+                    classes = getattr(val_loader.dataset, "classes",
+                                      [str(i) for i in range(getattr(args, "num_classes", 1000))])
+                    target_names = [synset2name.get(s, s) for s in classes]
+
+                    # (6) save confusion matrix + report
+                    cm = confusion_matrix(y_true, y_pred, labels=list(range(len(classes))))
+                    df_cm = pd.DataFrame(cm, index=target_names, columns=target_names)
+
+                    reports_dir.mkdir(parents=True, exist_ok=True)
+                    df_cm.to_csv(reports_dir / "confusion_matrix.csv", index=True)
+                    with open(reports_dir / "classification_report.txt", "w") as f:
+                        f.write(classification_report(y_true, y_pred,
+                                                      target_names=target_names,
+                                                      zero_division=0))
+
+                    print(f"[report] saved readable reports to: {reports_dir}")
+
             except Exception as e:
                 print(f"[warn] report failed: {e}")
+        # ===== END: Human-readable reporting for ImageNet =====
+
+        # if args.do_report and 'val_loader' in locals() and val_loader is not None:
+        #     try:
+        #         from sklearn.metrics import classification_report, confusion_matrix, precision_score, recall_score, f1_score
+        #         y_true, y_pred = [], []
+        #         with torch.no_grad():
+        #             mdl = model.module if isinstance(model, DDP) else model
+        #             mdl.eval()
+        #             for images, targets in val_loader:
+        #                 images = images.to(device, non_blocking=True)
+        #                 targets = targets.to(device, non_blocking=True)
+        #                 logits = mdl(images)
+        #                 pred = torch.argmax(logits, dim=1)
+        #                 y_true.extend(targets.cpu().numpy().tolist())
+        #                 y_pred.extend(pred.cpu().numpy().tolist())
+        #         import pandas as pd
+        #         cm = confusion_matrix(y_true, y_pred)
+        #         pd.DataFrame(cm).to_csv(reports_dir / "confusion_matrix.csv", index=False)
+        #         classes = getattr(val_loader.dataset, "classes", [str(i) for i in range(args.num_classes)])
+        #         with open(reports_dir / "classification_report.txt","w") as f:
+        #             f.write(classification_report(y_true, y_pred, target_names=classes, zero_division=0))
+
+        #         # --- W&B: macro P/R/F1 per-epoch final snapshot (logged once here as summary) ---
+        #         if wb_run is not None:
+        #             try:
+        #                 prec = precision_score(y_true, y_pred, average='macro', zero_division=0)
+        #                 rec  = recall_score(y_true, y_pred, average='macro', zero_division=0)
+        #                 f1   = f1_score(y_true, y_pred, average='macro', zero_division=0)
+        #                 wandb.summary['val/macro_precision'] = prec
+        #                 wandb.summary['val/macro_recall'] = rec
+        #                 wandb.summary['val/macro_f1'] = f1
+        #                 # also save files for convenience
+        #                 wandb.save(str(reports_dir / "confusion_matrix.csv"))
+        #                 wandb.save(str(reports_dir / "classification_report.txt"))
+        #             except Exception as e:
+        #                 print(f"[W&B] macro metrics upload skipped: {e}")
+        #     except Exception as e:
+        #         print(f"[warn] report failed: {e}")
 
         # --- W&B: upload CSV + reports as artifact at the end (optional) ---
         if wb_run is not None:

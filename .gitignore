@@ -73,5 +73,6 @@ Thumbs.dblogs/**/*.pth
 # logs & backups (keep out of future commits)
 backup_aws_v1/
 logs/g5x_1gpu_run/
+wandb/
 # optionally ignore all logs:
 # logs/

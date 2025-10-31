@@ -25,16 +25,22 @@ set -euo pipefail
 source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
 
 NGPUS=${1:-4}
-DATA=${1:-/mnt/imagenet1k}
+DATA=${2:-/mnt/imagenet1k}
 EPOCHS=${3:-90}
 BATCH=${4:-256}
-WORKERS=${4:-8}
-EXTRA_ARGS=( "${@:5}" )
+WORKERS=${5:-8}
+EXTRA_ARGS=( "${@:6}" )
+
+# Optional: quieter NCCL logs during sanity checks
+export NCCL_DEBUG=WARN
+# On some VM setups, these can help if you hit NCCL issues:
+# export NCCL_P2P_DISABLE=1
+# export NCCL_IB_DISABLE=1
 
 # ------------------------------------------------------------
 # ✅ Default: DALI + DDP (fastest configuration)
 # ------------------------------------------------------------
-# torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
+# torchrun --nproc_per_node="$NGPUS" --standalone train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
 #   --out-dir imagenet1k_g5_multi_dali \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
@@ -42,7 +48,7 @@ EXTRA_ARGS=( "${@:5}" )
 #   --workers "$WORKERS" \
 #   "${EXTRA_ARGS[@]}"
 
-torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
+torchrun --nproc_per_node="$NGPUS" --standalone train_full_ImageNet_AWS.py \
   --data "$DATA" \
   --out-dir imagenet1k_g5_multi_dali \
   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
@@ -55,9 +61,9 @@ torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 # Uncomment below block if you want Albumentations + DDP path.
 # ------------------------------------------------------------
 ## with pretrained model of resnet50
-# torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
+# torchrun --nproc_per_node="$NGPUS" --standalone train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/imagenet1k_g5_multi_albu \
+#   --out-dir imagenet1k_g5_multi_albu \
 #   --loader albumentations --use-class-style \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report --pretrained \
@@ -65,9 +71,9 @@ torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 #   "${EXTRA_ARGS[@]}"
 
 ## without pretrained model of resnet50
-# torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
+# torchrun --nproc_per_node="$NGPUS" --standalone train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/imagenet1k_g5_multi_albu \
+#   --out-dir imagenet1k_g5_multi_albu \
 #   --loader albumentations --use-class-style \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report \

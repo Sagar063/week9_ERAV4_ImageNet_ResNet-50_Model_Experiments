@@ -15,8 +15,19 @@
 # Single-GPU launch script for ImageNet / Imagenette training
 # Usage:
 #   bash scripts/launch_single_gpu.sh [DATA_PATH] [EPOCHS] [BATCH] [WORKERS]
-# Example:
-#   bash scripts/launch_single_gpu.sh /mnt/imagenette 50 256 8
+# Examples:
+#   🔹 Full ImageNet run (no progress bars)
+#      bash scripts/launch_single_gpu.sh /mnt/imagenet1k 90 256 8 \
+#        --max-lr 0.0156 --stats-file data_stats/imagenet1k_aws_stats.json \
+#        --out-dir imagenet1k_g5x_1gpu_dali_full --wandb --wandb-project imagenet1k_runs
+#
+#   🔹 Debug run on small subset *with tqdm progress bars*
+#      bash scripts/launch_single_gpu.sh /mnt/debug_data 1 32 4 \
+#        --show-progress --out-dir debug_7class_tqdm_test
+#
+# Tip:
+#   --show-progress  → enables tqdm per-batch progress bars (use only for short/debug runs)
+#   (no flag)        → default silent mode (faster, cleaner logs)
 # ============================================================
 
 set -euo pipefail
