@@ -463,6 +463,7 @@ def main():
                 config=vars(args),
                 save_code=True
             )
+            print("[W&B] init passed")
         except Exception as e:
             print(f"[W&B] init failed: {e}")
             wb_run = None
@@ -570,6 +571,7 @@ def main():
                         'val/top5': init_val['top5'],
                         'lr': lr_now
                     }, step=-1)
+                    print("[W&B] initial passed")
                 except Exception as e:
                     print(f"[W&B] initial log failed: {e}")
 
@@ -614,6 +616,7 @@ def main():
                         'val/top1': val_stats['top1'],
                         'val/top5': val_stats['top5']
                     }, step=epoch)
+                    print("[W&B] epoch log passed")
                 except Exception as e:
                     print(f"[W&B] epoch log failed: {e}")
 
@@ -638,6 +641,7 @@ def main():
                         art = wandb.Artifact(f'{run_name}-ckpts', type='model')
                         art.add_file(str(ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"))
                         wandb.log_artifact(art)
+                        print("[W&B] artifact uploaded")
                     except Exception as e:
                         print(f"[W&B] artifact upload skipped: {e}")
 
