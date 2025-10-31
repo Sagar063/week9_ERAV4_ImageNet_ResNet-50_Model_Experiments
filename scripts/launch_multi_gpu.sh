@@ -22,10 +22,10 @@
 # ============================================================
 
 set -euo pipefail
-source /opt/dlami/nvme/envs/train312/bin/activate
+source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
 
 NGPUS=${1:-4}
-DATA=${2:-/mnt/imagenet}
+DATA=${1:-/mnt/imagenet1k}
 EPOCHS=${3:-90}
 BATCH=${4:-256}
 WORKERS=${4:-8}
@@ -36,7 +36,7 @@ EXTRA_ARGS=( "${@:5}" )
 # ------------------------------------------------------------
 # torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/g5_multi_dali \
+#   --out-dir imagenet1k_g5_multi_dali \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report --pretrained \
 #   --workers "$WORKERS" \
@@ -44,7 +44,7 @@ EXTRA_ARGS=( "${@:5}" )
 
 torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
   --data "$DATA" \
-  --out-dir logs/g5_multi_dali \
+  --out-dir imagenet1k_g5_multi_dali \
   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
   --amp --channels-last --do-report  \
   --workers "$WORKERS" \
@@ -57,7 +57,7 @@ torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 ## with pretrained model of resnet50
 # torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/g5_multi_albu \
+#   --out-dir logs/imagenet1k_g5_multi_albu \
 #   --loader albumentations --use-class-style \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report --pretrained \
@@ -67,7 +67,7 @@ torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 ## without pretrained model of resnet50
 # torchrun --nproc_per_node=$NGPUS --standalone train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/g5_multi_albu \
+#   --out-dir logs/imagenet1k_g5_multi_albu \
 #   --loader albumentations --use-class-style \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report \

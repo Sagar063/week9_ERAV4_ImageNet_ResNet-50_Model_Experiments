@@ -8,9 +8,9 @@
 # ============================================================
 
 set -euo pipefail
-source /opt/dlami/nvme/envs/train312/bin/activate
+source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
 
-DATA=${1:-/mnt/imagenet}
+DATA=${1:-/mnt/imagenet1k}
 BATCH=${2:-256}
 ITERS=${3:-150}
 OUTDIR=${4:-lr_finder_plots_imagenet1k}

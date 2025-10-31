@@ -34,7 +34,7 @@ import numpy as np, json, os, time
 # ):
 def find_lr(
     #data_root="data/imagenet_mini",
-    data_root = str(Path(__file__).resolve().parent / "data" / "imagenet"),
+    data_root = "/mnt/imagenet1k",
     start_lr=1e-7,
     end_lr=1.0,
     num_iter=150,

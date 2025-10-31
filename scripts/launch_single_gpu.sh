@@ -21,10 +21,10 @@
 
 set -euo pipefail
 # Activate your venv (adjust path if different)
-source /opt/dlami/nvme/envs/train312/bin/activate
+source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
 
 # Default values
-DATA=${1:-/mnt/imagenette}
+DATA=${1:-/mnt/imagenet1k}
 EPOCHS=${2:-90}
 BATCH=${3:-256}
 WORKERS=${4:-8}
@@ -36,7 +36,7 @@ EXTRA_ARGS=( "${@:5}" )
 ## Wih pretrained mdoel of resnet50
 # CUDA_VISIBLE_DEVICES=0 python3 -u train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/g5x_1gpu_run_dali \
+#   --out-dir imagenet1k_g5x_1gpu_dali \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report --pretrained \
 #   --workers "$WORKERS"\
@@ -45,7 +45,7 @@ EXTRA_ARGS=( "${@:5}" )
 ## without pretrained model of resnet50
 CUDA_VISIBLE_DEVICES=0 python3 -u train_full_ImageNet_AWS.py \
   --data "$DATA" \
-  --out-dir logs/g5x_1gpu_run_dali \
+  --out-dir imagenet1k_g5x_1gpu_dali \
   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
   --amp --channels-last --do-report \
   --workers "$WORKERS"\
@@ -57,7 +57,7 @@ CUDA_VISIBLE_DEVICES=0 python3 -u train_full_ImageNet_AWS.py \
 ## with pretrained model of resnet50
 # CUDA_VISIBLE_DEVICES=0 python3 -u train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/g5x_1gpu_run_albu \
+#   --out-dir logs/imagenet1k_g5x_1gpu_run_albu \
 #   --loader albumentations --use-class-style \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report --pretrained \
@@ -67,7 +67,7 @@ CUDA_VISIBLE_DEVICES=0 python3 -u train_full_ImageNet_AWS.py \
 ## without pretrained model of resnet50
 # CUDA_VISIBLE_DEVICES=0 python3 -u train_full_ImageNet_AWS.py \
 #   --data "$DATA" \
-#   --out-dir logs/g5x_1gpu_run_albu \
+#   --out-dir logs/imagenet1k_g5x_1gpu_run_albu \
 #   --loader albumentations --use-class-style \
 #   --epochs "$EPOCHS" --batch-size "$BATCH" --eval-batch-size "$BATCH" \
 #   --amp --channels-last --do-report \
