@@ -15,7 +15,7 @@ torchaudio==2.4.1+cu121
 torchinfo>=1.8.0
 torch-lr-finder>=0.2.1,<0.3.0
 fire>=0.6.0
-
+tensorboard==2.20.0
 # ---------- Image / Augmentation ----------
 timm==1.0.9
 albumentations==1.4.14

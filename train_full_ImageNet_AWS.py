@@ -26,7 +26,6 @@ import torch.distributed as dist
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
@@ -41,13 +40,15 @@ try:
     from torchinfo import summary
 except Exception:
     summary = None
-
+from tqdm import tqdm
 # --- W&B: optional import (safe if not used) ---
 try:
     import wandb  # only used when --wandb is set
 except Exception:
     wandb = None
-
+from dataset.imagenet_dali import dali_loader
+from dataset.imagenet import make_loaders
+import glob
 # cache hooks visible to helper fns
 CACHED_MEAN = None
 CACHED_STD  = None
@@ -144,7 +145,7 @@ def count_images(root: Path) -> int:
     return n
 
 def build_dali_iterators(args, device_id, world_size, rank):
-    from dataset.imagenet_dali import dali_loader
+    
     train_iter = dali_loader(str(Path(args.data)/"train"),
                             args.batch_size, args.workers,
                             device_id, world_size, rank,
@@ -155,7 +156,6 @@ def build_dali_iterators(args, device_id, world_size, rank):
     return train_iter, val_ds
 
 def build_albumentations_loaders(args, world_size, rank):
-    from dataset.imagenet import make_loaders
     train_loader, val_loader, classes, mean, std = make_loaders(
         data_root=args.data,
         batch_size=args.batch_size,
@@ -194,7 +194,6 @@ def progress_enumerator(loader, desc, args):
     """Return tqdm(enumerate(loader)) when --show-progress on (rank-0), else plain enumerate."""
     if is_main_process() and getattr(args, 'show_progress', False):
         try:
-            from tqdm import tqdm
             return tqdm(enumerate(loader), total=len(loader), ncols=90, desc=desc)
         except Exception:
             pass
@@ -208,7 +207,7 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
     top1_sum = 0.0
     top5_sum = 0.0
     imgs_sum = 0.0
-    log_every = 1000 #500
+    log_every = 1#1000 #500
     def mixup_data(x, y, alpha=0.2):
         if alpha <= 0: return x, y, y, 1.0
         lam = np.random.beta(alpha, alpha)
@@ -278,20 +277,37 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
         imgs_per_sec = (B * get_world_size()) / iter_time
 
         # --- W&B: in-epoch streaming logs every N steps (rank-0 only) ---
+        # if is_main_process() and getattr(args, 'wandb', False) and (wandb is not None):
+        #     if (i + 1) % log_every == 0:
+        #         try:
+        #             wandb.log({
+        #                 'epoch': epoch,
+        #                 'step_in_epoch': i + 1,
+        #                 'lr': optimizer.param_groups[0]['lr'],
+        #                 'train/loss_iter': float(loss.item()),
+        #                 'train/top1_iter': float(t1),
+        #                 'train/top5_iter': float(t5),
+        #                 'train/imgs_per_sec_iter': float(imgs_per_sec),
+        #             })
+        #         except Exception as e:
+        #             print(f"[W&B] iter log failed: {e}")
+        # --- W&B: in-epoch streaming logs every N steps (rank-0 only) ---
         if is_main_process() and getattr(args, 'wandb', False) and (wandb is not None):
             if (i + 1) % log_every == 0:
                 try:
+                    global_iter = epoch * args.steps_per_epoch + (i + 1)
                     wandb.log({
-                        'epoch': epoch,
-                        'step_in_epoch': i + 1,
-                        'lr': optimizer.param_groups[0]['lr'],
-                        'train/loss_iter': float(loss.item()),
-                        'train/top1_iter': float(t1),
-                        'train/top5_iter': float(t5),
-                        'train/imgs_per_sec_iter': float(imgs_per_sec),
+                        "train_iter/step": int(global_iter),
+                        "train_iter/lr": float(optimizer.param_groups[0]['lr']),
+                        "train_iter/loss": float(loss.item()),
+                        "train_iter/top1": float(t1),
+                        "train_iter/top5": float(t5),
+                        "train_iter/imgs_per_sec": float(imgs_per_sec),
                     })
                 except Exception as e:
                     print(f"[W&B] iter log failed: {e}")
+
+
 
 
         running_loss += loss.item() * B
@@ -340,7 +356,7 @@ def validate(model, loader, device, args, criterion, epoch):
     total = 0
     top1_sum = 0.0
     top5_sum = 0.0
-    val_log_every = 100 # 100
+    val_log_every = 1#100 # 100
     loop = progress_enumerator(loader, f"Val {epoch:03d}", args)
     for i, batch in loop:
         images, targets = batch
@@ -362,18 +378,34 @@ def validate(model, loader, device, args, criterion, epoch):
         top5_sum += t5 * B
 
         # --- W&B: live val logs during the epoch (rank-0 only) ---
+        # --- W&B: live val logs during the epoch (rank-0 only) ---
         if is_main_process() and getattr(args, 'wandb', False) and (wandb is not None):
             if (i + 1) % val_log_every == 0:
                 try:
+                    val_global_iter = max(0, epoch) * len(loader) + (i + 1)
                     wandb.log({
-                        'epoch': epoch,
-                        'val/loss_iter': float(loss.item()),
-                        'val/top1_iter': float(t1),
-                        'val/top5_iter': float(t5),
-                        'val/seen_examples': int(total)
+                        "val_iter/step": int(val_global_iter),
+                        "val_iter/loss": float(loss.item()),
+                        "val_iter/top1": float(t1),
+                        "val_iter/top5": float(t5),
+                        "val_iter/seen_examples": int(total)
                     })
                 except Exception as e:
                     print(f"[W&B] val-iter log failed: {e}")
+
+
+        # if is_main_process() and getattr(args, 'wandb', False) and (wandb is not None):
+        #     if (i + 1) % val_log_every == 0:
+        #         try:
+        #             wandb.log({
+        #                 'epoch': epoch,
+        #                 'val/loss_iter': float(loss.item()),
+        #                 'val/top1_iter': float(t1),
+        #                 'val/top5_iter': float(t5),
+        #                 'val/seen_examples': int(total)
+        #             })
+        #         except Exception as e:
+        #             print(f"[W&B] val-iter log failed: {e}")
 
         # tqdm postfix (only when enabled)
         if is_main_process() and getattr(args, 'show_progress', False):
@@ -456,7 +488,6 @@ def main():
 
     cached_mean, cached_std = None, None
     if args.stats_file and os.path.isfile(args.stats_file):
-        import json
         with open(args.stats_file) as f:
             s = json.load(f)
             cached_mean, cached_std = s.get("mean"), s.get("std")
@@ -473,7 +504,7 @@ def main():
 
     for d in (out_dir, ckpt_dir, reports_dir, runs_dir):
         d.mkdir(parents=True, exist_ok=True)
-
+    prev_best_ckpt_path: Path | None = None
     csv_path = out_dir / "train_log.csv"
     md_path  = out_dir / "logs.md"
 
@@ -482,6 +513,7 @@ def main():
         append_md(md_path, "| epoch | phase | loss | top1 | top5 | lr | imgs/s |")
         append_md(md_path, "|---:|---|---:|---:|---:|---:|---:|")
 
+
     # --- W&B: init (rank-0 only) ---
     wb_run = None
     if args.wandb and is_main_process() and wandb is not None:
@@ -489,44 +521,33 @@ def main():
             os.environ['WANDB_MODE'] = 'offline'
         _tags = [t.strip() for t in args.wandb_tags.split(',') if t.strip()]
         try:
-            # wb_run = wandb.init(
-            #     project=args.wandb_project,
-            #     entity=args.wandb_entity,
-            #     name=run_name,
-            #     tags=_tags or None,
-            #     config=vars(args),
-            #     save_code=True
-            # )
-            #print("[W&B] init passed")
+            wb_run = wandb.init(
+                project=args.wandb_project,
+                entity=args.wandb_entity,
+                name=run_name,
+                tags=_tags or None,
+                config=vars(args),
+                save_code=True,
+                settings=wandb.Settings(start_method="thread")  # important for DDP/multiprocessing
+            )
             try:
                 wandb.define_metric("epoch")
                 wandb.define_metric("train/*", step_metric="epoch")
                 wandb.define_metric("val/*",   step_metric="epoch")
+                wandb.define_metric("train_iter/*", step_metric="train_iter/step")
+                wandb.define_metric("val_iter/*",   step_metric="val_iter/step")
             except Exception:
                 pass
-            wb_run = wandb.init(
-            project=args.wandb_project,
-            entity=args.wandb_entity,
-            name=run_name,
-            tags=_tags or None,
-            config=vars(args),
-            save_code=True,
-            settings=wandb.Settings(start_method="thread"))  # important for DDP/multiprocessing
-            # Optional (helpful for quick model/grad snapshots; safe to omit if noisy)
-            try:
-                wandb.watch((model.module if isinstance(model, DDP) else model), log='gradients', log_freq=200)
-            except Exception:
-                pass
-
-        except Exception as e:
-            #print(f"[W&B] init failed: {e}")
+        except Exception:
             wb_run = None
+            print("[W&B] initialization failed, continuing without it.")
 
     # ---------- Data ----------
     if args.loader == "dali":
         train_iter, val_ds = build_dali_iterators(args, device_id=local_rank, world_size=world_size, rank=rank)
         n_train = count_images(Path(args.data)/"train")
         steps_per_epoch = math.ceil((n_train / max(world_size,1)) / args.batch_size)
+        args.steps_per_epoch = steps_per_epoch
         if val_ds is None:
             _, val_ds, _, _, _ = build_torchvision_datasets(args)
         val_sampler = DistributedSampler(val_ds, num_replicas=world_size, rank=rank, shuffle=False) if is_dist() else None
@@ -539,6 +560,7 @@ def main():
     else:
         train_loader, val_loader, classes, mean, std = build_albumentations_loaders(args, world_size, rank)
         steps_per_epoch = len(train_loader)
+        args.steps_per_epoch = steps_per_epoch
         num_classes = len(classes)
     if is_main_process():
         print(f"=> classes: {num_classes} | mean={mean} | std={std}")
@@ -551,6 +573,14 @@ def main():
 
     if is_dist():
         model = DDP(model, device_ids=[local_rank], output_device=local_rank, find_unused_parameters=False)
+
+    # W&B: watch gradients/parameters now that model is created
+    if wb_run is not None:
+        try:
+            wandb.watch((model.module if isinstance(model, DDP) else model), log='gradients', log_freq=200)
+        except Exception:
+            pass
+
 
     # ---------- Optimizer / Scheduler / Loss ----------
     global_bsz = args.batch_size * max(1, world_size)
@@ -582,7 +612,7 @@ def main():
             from torch.utils.tensorboard import SummaryWriter
             tb_writer = SummaryWriter(log_dir=str(runs_dir))
         except Exception as e:
-            print(f("[warn] TensorBoard disabled: {e}"))
+            print(f"[warn] TensorBoard disabled: {e}")
 
     # ---------- Resume ----------
     start_epoch = 0
@@ -605,6 +635,9 @@ def main():
         best_top1 = float(ckpt.get("best_top1", 0.0))
         if is_main_process():
             print(f"=> Resumed from {args.resume} @ epoch {start_epoch} (best_top1={best_top1:.2f})")
+        resume_name = Path(args.resume).name
+        if resume_name.startswith("best_acc_epoch") and resume_name.endswith(".pth"):
+            prev_best_ckpt_path = Path(args.resume)
 
     # ---------- Initial sanity val ----------
     if val_loader is not None:
@@ -624,8 +657,8 @@ def main():
                         'val/top1': init_val['top1'],
                         'val/top5': init_val['top5'],
                         'lr': lr_now
-                    }, step=-1)
-                    print("[W&B] initial passed")
+                    })
+                    #print("[W&B] initial passed")
                 except Exception as e:
                     print(f"[W&B] initial log failed: {e}")
 
@@ -669,7 +702,7 @@ def main():
                         'val/loss': val_stats['loss'],
                         'val/top1': val_stats['top1'],
                         'val/top5': val_stats['top5']
-                    }, step=epoch)
+                    })
                     #print("[W&B] epoch log passed")
                 except Exception as e:
                     print(f"[W&B] epoch log failed: {e}")
@@ -686,35 +719,46 @@ def main():
             torch.save(state, ckpt_dir / "last_epoch.pth")
             # --- also save numbered copy for crash recovery ---
             torch.save(state, ckpt_dir / f"last_epoch{epoch:03d}.pth")
-            is_best = val_stats["top1"] > best_top1
-            if is_best:
-                best_top1 = val_stats["top1"]
 
-                # Build new best path
-                new_best_path = ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"
+            try:
+                
+                numbered = sorted(glob.glob(str(ckpt_dir / "last_epoch[0-9][0-9][0-9].pth")))
+                if len(numbered) > 3:
+                    for old_p in numbered[:-3]:
+                        os.remove(old_p)
+            except Exception as e:
+                print(f"[ckpt] cleanup failed: {e}")
+            
+            if val_loader is not None:
+                is_best = val_stats["top1"] > best_top1
+                if is_best:
+                    best_top1 = val_stats["top1"]
 
-                # Delete previous best (if any)
-                if prev_best_ckpt_path is not None and prev_best_ckpt_path.exists():
-                    try:
-                        prev_best_ckpt_path.unlink()
-                        print(f"[ckpt] deleted previous best: {prev_best_ckpt_path.name}")
-                    except Exception as e:
-                        print(f"[ckpt] could not delete previous best: {e}")
+                    # Build new best path
+                    new_best_path = ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"
 
-                # Save the new best
-                torch.save(state, new_best_path)
-                prev_best_ckpt_path = new_best_path
-                print(f"[ckpt] saved new best: {new_best_path.name} (top1={best_top1:.2f})")
+                    # Delete previous best (if any)
+                    if prev_best_ckpt_path is not None and prev_best_ckpt_path.exists():
+                        try:
+                            prev_best_ckpt_path.unlink()
+                            #print(f"[ckpt] deleted previous best: {prev_best_ckpt_path.name}")
+                        except Exception as e:
+                            print(f"[ckpt] could not delete previous best: {e}")
 
-                # --- W&B: upload best checkpoint as artifact (optional) ---
-                if wb_run is not None:
-                    try:
-                        art = wandb.Artifact(f'{run_name}-ckpts', type='model')
-                        art.add_file(str(new_best_path))
-                        wandb.log_artifact(art)
-                        print("[W&B] artifact uploaded")
-                    except Exception as e:
-                        print(f"[W&B] artifact upload skipped: {e}")
+                    # Save the new best
+                    torch.save(state, new_best_path)
+                    prev_best_ckpt_path = new_best_path
+                    #print(f"[ckpt] saved new best: {new_best_path.name} (top1={best_top1:.2f})")
+
+                    # --- W&B: upload best checkpoint as artifact (optional) ---
+                    if wb_run is not None:
+                        try:
+                            art = wandb.Artifact(f'{run_name}-ckpts', type='model')
+                            art.add_file(str(new_best_path))
+                            wandb.log_artifact(art)
+                            #print("[W&B] artifact uploaded")
+                        except Exception as e:
+                            print(f"[W&B] artifact upload skipped: {e}")
 
             # is_best = val_stats["top1"] > best_top1
             # if is_best:
@@ -733,7 +777,6 @@ def main():
 
     if is_main_process():
         try:
-            import pandas as pd
             df = pd.read_csv(csv_path)
             plt.figure()
             df_train = df[df.phase=="train"]; df_val = df[df.phase=="val"]
