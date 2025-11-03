@@ -208,7 +208,7 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
     top1_sum = 0.0
     top5_sum = 0.0
     imgs_sum = 0.0
-
+    log_every = 1000 #500
     def mixup_data(x, y, alpha=0.2):
         if alpha <= 0: return x, y, y, 1.0
         lam = np.random.beta(alpha, alpha)
@@ -277,6 +277,23 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
         iter_time = max(time.time() - t_iter0, 1e-6)
         imgs_per_sec = (B * get_world_size()) / iter_time
 
+        # --- W&B: in-epoch streaming logs every N steps (rank-0 only) ---
+        if is_main_process() and getattr(args, 'wandb', False) and (wandb is not None):
+            if (i + 1) % log_every == 0:
+                try:
+                    wandb.log({
+                        'epoch': epoch,
+                        'step_in_epoch': i + 1,
+                        'lr': optimizer.param_groups[0]['lr'],
+                        'train/loss_iter': float(loss.item()),
+                        'train/top1_iter': float(t1),
+                        'train/top5_iter': float(t5),
+                        'train/imgs_per_sec_iter': float(imgs_per_sec),
+                    })
+                except Exception as e:
+                    print(f"[W&B] iter log failed: {e}")
+
+
         running_loss += loss.item() * B
         total += B
         top1_sum += t1 * B
@@ -323,6 +340,7 @@ def validate(model, loader, device, args, criterion, epoch):
     total = 0
     top1_sum = 0.0
     top5_sum = 0.0
+    val_log_every = 100 # 100
     loop = progress_enumerator(loader, f"Val {epoch:03d}", args)
     for i, batch in loop:
         images, targets = batch
@@ -342,6 +360,20 @@ def validate(model, loader, device, args, criterion, epoch):
         total += B
         top1_sum += t1 * B
         top5_sum += t5 * B
+
+        # --- W&B: live val logs during the epoch (rank-0 only) ---
+        if is_main_process() and getattr(args, 'wandb', False) and (wandb is not None):
+            if (i + 1) % val_log_every == 0:
+                try:
+                    wandb.log({
+                        'epoch': epoch,
+                        'val/loss_iter': float(loss.item()),
+                        'val/top1_iter': float(t1),
+                        'val/top5_iter': float(t5),
+                        'val/seen_examples': int(total)
+                    })
+                except Exception as e:
+                    print(f"[W&B] val-iter log failed: {e}")
 
         # tqdm postfix (only when enabled)
         if is_main_process() and getattr(args, 'show_progress', False):
@@ -409,8 +441,10 @@ def parse_args():
 # ---------------------- Main ----------------------
 def main():
     args = parse_args()
+    #set_seed(args.seed)
+    if is_main_process():
+        print("WANDB_MODE:", os.environ.get("WANDB_MODE"))
     set_seed(args.seed)
-
     setup_ddp()
     local_rank = int(os.environ.get("LOCAL_RANK", 0)) if is_dist() else 0
     device = torch.device('cuda', local_rank) if torch.cuda.is_available() else torch.device('cpu')
@@ -455,17 +489,37 @@ def main():
             os.environ['WANDB_MODE'] = 'offline'
         _tags = [t.strip() for t in args.wandb_tags.split(',') if t.strip()]
         try:
+            # wb_run = wandb.init(
+            #     project=args.wandb_project,
+            #     entity=args.wandb_entity,
+            #     name=run_name,
+            #     tags=_tags or None,
+            #     config=vars(args),
+            #     save_code=True
+            # )
+            #print("[W&B] init passed")
+            try:
+                wandb.define_metric("epoch")
+                wandb.define_metric("train/*", step_metric="epoch")
+                wandb.define_metric("val/*",   step_metric="epoch")
+            except Exception:
+                pass
             wb_run = wandb.init(
-                project=args.wandb_project,
-                entity=args.wandb_entity,
-                name=run_name,
-                tags=_tags or None,
-                config=vars(args),
-                save_code=True
-            )
-            print("[W&B] init passed")
+            project=args.wandb_project,
+            entity=args.wandb_entity,
+            name=run_name,
+            tags=_tags or None,
+            config=vars(args),
+            save_code=True,
+            settings=wandb.Settings(start_method="thread"))  # important for DDP/multiprocessing
+            # Optional (helpful for quick model/grad snapshots; safe to omit if noisy)
+            try:
+                wandb.watch((model.module if isinstance(model, DDP) else model), log='gradients', log_freq=200)
+            except Exception:
+                pass
+
         except Exception as e:
-            print(f"[W&B] init failed: {e}")
+            #print(f"[W&B] init failed: {e}")
             wb_run = None
 
     # ---------- Data ----------
@@ -576,7 +630,7 @@ def main():
                     print(f"[W&B] initial log failed: {e}")
 
     # ---------- Train ----------
-    use_mixup  = True   # <-- comment to disable MixUp
+    use_mixup  = False   # <-- comment to disable MixUp
     use_cutmix = False  # <-- set True to try CutMix (don't use both)
 
     for epoch in range(start_epoch, args.epochs):
@@ -616,7 +670,7 @@ def main():
                         'val/top1': val_stats['top1'],
                         'val/top5': val_stats['top5']
                     }, step=epoch)
-                    print("[W&B] epoch log passed")
+                    #print("[W&B] epoch log passed")
                 except Exception as e:
                     print(f"[W&B] epoch log failed: {e}")
 
@@ -630,20 +684,52 @@ def main():
                 "best_top1": float(best_top1)
             }
             torch.save(state, ckpt_dir / "last_epoch.pth")
+            # --- also save numbered copy for crash recovery ---
+            torch.save(state, ckpt_dir / f"last_epoch{epoch:03d}.pth")
             is_best = val_stats["top1"] > best_top1
             if is_best:
                 best_top1 = val_stats["top1"]
-                torch.save(state, ckpt_dir / f"best_acc_epoch{epoch:03d}.pth")
+
+                # Build new best path
+                new_best_path = ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"
+
+                # Delete previous best (if any)
+                if prev_best_ckpt_path is not None and prev_best_ckpt_path.exists():
+                    try:
+                        prev_best_ckpt_path.unlink()
+                        print(f"[ckpt] deleted previous best: {prev_best_ckpt_path.name}")
+                    except Exception as e:
+                        print(f"[ckpt] could not delete previous best: {e}")
+
+                # Save the new best
+                torch.save(state, new_best_path)
+                prev_best_ckpt_path = new_best_path
+                print(f"[ckpt] saved new best: {new_best_path.name} (top1={best_top1:.2f})")
 
                 # --- W&B: upload best checkpoint as artifact (optional) ---
                 if wb_run is not None:
                     try:
                         art = wandb.Artifact(f'{run_name}-ckpts', type='model')
-                        art.add_file(str(ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"))
+                        art.add_file(str(new_best_path))
                         wandb.log_artifact(art)
                         print("[W&B] artifact uploaded")
                     except Exception as e:
                         print(f"[W&B] artifact upload skipped: {e}")
+
+            # is_best = val_stats["top1"] > best_top1
+            # if is_best:
+            #     best_top1 = val_stats["top1"]
+            #     torch.save(state, ckpt_dir / f"best_acc_epoch{epoch:03d}.pth")
+
+            #     # --- W&B: upload best checkpoint as artifact (optional) ---
+            #     if wb_run is not None:
+            #         try:
+            #             art = wandb.Artifact(f'{run_name}-ckpts', type='model')
+            #             art.add_file(str(ckpt_dir / f"best_acc_epoch{epoch:03d}.pth"))
+            #             wandb.log_artifact(art)
+            #             print("[W&B] artifact uploaded")
+            #         except Exception as e:
+            #             print(f"[W&B] artifact upload skipped: {e}")
 
     if is_main_process():
         try:

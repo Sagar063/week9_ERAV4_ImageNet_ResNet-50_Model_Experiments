@@ -17,7 +17,7 @@ OUTDIR=${4:-lr_finder_plots_imagenet1k}
 
 python3 lr_finder.py find_lr \
   --data_root "$DATA" \
-  --batch_size "$BATCH" --workers 8 \
+  --batch_size "$BATCH" --workers 4 \
   --start_lr 1e-7 --end_lr 1.0 \
   --num_iter "$ITERS" --img_size 224 \
   --use_class_style_aug=False \
