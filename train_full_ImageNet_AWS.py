@@ -207,7 +207,7 @@ def train_one_epoch(model, loader, optimizer, scaler, device, epoch, args, crite
     top1_sum = 0.0
     top5_sum = 0.0
     imgs_sum = 0.0
-    log_every = 1#1000 #500
+    log_every = 1000 #500
     def mixup_data(x, y, alpha=0.2):
         if alpha <= 0: return x, y, y, 1.0
         lam = np.random.beta(alpha, alpha)
@@ -356,7 +356,7 @@ def validate(model, loader, device, args, criterion, epoch):
     total = 0
     top1_sum = 0.0
     top5_sum = 0.0
-    val_log_every = 1#100 # 100
+    val_log_every = 100 # 100
     loop = progress_enumerator(loader, f"Val {epoch:03d}", args)
     for i, batch in loop:
         images, targets = batch
