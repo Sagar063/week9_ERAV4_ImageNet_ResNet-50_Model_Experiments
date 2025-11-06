@@ -496,7 +496,8 @@ def main():
 
     # Interpret --out-dir as the RUN NAME (e.g., "g5x_1gpu_run")
     run_name   = Path(args.out_dir).name
-    base       = Path(".")
+    #base       = Path(".")
+    base       = Path("/mnt/imagenet1k")
     out_dir    = base / "out" / run_name
     ckpt_dir   = base / "checkpoints" / run_name
     reports_dir= base / "reports" / run_name
