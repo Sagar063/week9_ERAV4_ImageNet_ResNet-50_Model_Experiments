@@ -1,3 +1,8 @@
+'''
+python scripts/rehumanize_imagenet_reports.py \
+  --root reports/r50_imagenet1k_onecycle_amp_bs64_ep150 \
+  --map utils/imagenet_class_index.json
+'''
 #!/usr/bin/env python3
 import argparse, json, re
 from pathlib import Path
