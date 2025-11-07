@@ -77,7 +77,8 @@ def train_one_epoch(epoch, model, optimizer, scheduler, scaler, criterion,
         scaler.scale(loss).backward()
         scaler.step(optimizer)
         scaler.update()
-        scheduler.step()  # per-batch step for OneCycleLR
+        if scheduler is not None: ## Added for extended training and prevent jump for epochs 220-250
+            scheduler.step()  # per-batch step for OneCycleLR
 
         bs = images.size(0)
         total += bs
@@ -355,6 +356,25 @@ def main():
     writer = SummaryWriter(str(run_dir))
 
     # Resume
+    # start_epoch = 0
+    # best_top1 = 0.0
+    # ckpt_path = ckpt_dir / "checkpoint.pth"
+    # best_path = ckpt_dir / "best.pth"
+    # if args.resume and ckpt_path.exists():
+    #     print(f"=> resuming from {ckpt_path}")
+    #     ckpt = torch.load(ckpt_path, map_location="cpu")
+    #     model.load_state_dict(ckpt["model"])
+    #     optimizer.load_state_dict(ckpt["optimizer"])
+    #     #scheduler.load_state_dict(ckpt["scheduler"])
+    #     scaler.load_state_dict(ckpt["scaler"])
+    #     best_top1 = ckpt.get("best_top1", 0.0)
+    #     start_epoch = ckpt["epoch"] + 1
+    #     scheduler.last_epoch = start_epoch * steps_per_epoch - 1
+    #     # Ensure optimizer LR matches the schedule BEFORE first batch of the resumed run
+    #     for group, lr in zip(optimizer.param_groups, scheduler.get_last_lr()):
+    #         group["lr"] = lr
+    #     print(f"=> resumed at epoch {start_epoch}, best_top1 {best_top1:.2f}%")
+    # Resume
     start_epoch = 0
     best_top1 = 0.0
     ckpt_path = ckpt_dir / "checkpoint.pth"
@@ -364,12 +384,29 @@ def main():
         ckpt = torch.load(ckpt_path, map_location="cpu")
         model.load_state_dict(ckpt["model"])
         optimizer.load_state_dict(ckpt["optimizer"])
-        scheduler.load_state_dict(ckpt["scheduler"])
+        # Do NOT load the old scheduler when resuming/extend
+        # scheduler.load_state_dict(ckpt["scheduler"])
         scaler.load_state_dict(ckpt["scaler"])
         best_top1 = ckpt.get("best_top1", 0.0)
         start_epoch = ckpt["epoch"] + 1
-        print(f"=> resumed at epoch {start_epoch}, best_top1 {best_top1:.2f}%")
 
+        orig_epochs = ckpt.get("args", {}).get("epochs", start_epoch)
+        last_lr = optimizer.param_groups[0]["lr"]
+
+        if args.epochs > orig_epochs:
+            # EXTENSION (e.g., 220 -> 250): freeze LR exactly where it is
+            for g in optimizer.param_groups:
+                g["lr"] = last_lr
+            scheduler = None  # stop stepping LR
+            print(f"=> extending {orig_epochs}→{args.epochs} with CONSTANT LR {last_lr:.8f}")
+        else:
+            # Same total epochs: continue OneCycle exactly at next batch
+            scheduler.last_epoch = start_epoch * steps_per_epoch - 1
+            for g, lr in zip(optimizer.param_groups, scheduler.get_last_lr()):
+                g["lr"] = lr
+            print(f"=> continuing OneCycle at epoch {start_epoch}")
+
+        print(f"=> resumed at epoch {start_epoch}, best_top1 {best_top1:.2f}%")
     # Initial eval (sanity)
     print("=> initial evaluation")
     val_out = evaluate(start_epoch, model, criterion, val_loader, device, amp_enabled, writer)
@@ -399,7 +436,8 @@ def main():
             "epoch": epoch,
             "model": model.state_dict(),
             "optimizer": optimizer.state_dict(),
-            "scheduler": scheduler.state_dict(),
+            #"scheduler": scheduler.state_dict(), # commetned while training from 220 - 235 epoch
+            "scheduler": (scheduler.state_dict() if scheduler is not None else {"type": "constant", "lr": optimizer.param_groups[0]["lr"]}),
             "scaler": scaler.state_dict(),
             "best_top1": best_top1,
             "args": vars(args),
