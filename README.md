@@ -152,22 +152,92 @@ python train_full_ImageNet1k_SingleGPU.py   --data-root data/imagenet   --batch-
 ```bash
 bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   --stats-file data_stats/imagenet_1k_aws_stats.json   --show-progress   --amp --channels-last   --resume /mnt/imagenet1k/checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch120.pth   --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6   --wandb --wandb-project imagenet1k_runs   --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6,resumed_e120
 ```
-
 ### 2.4 Key arguments
-*(to be filled later)*
+| Arg | Default | Meaning |
+|---|---:|---|
+| `--data-root` | `data/imagenet-mini` | Root containing `train/` and `val/` (ImageFolder) |
+| `--name` | `r50_onecycle_amp` | Run/experiment name used for all output folders |
+| `--epochs` | `20` | Number of epochs |
+| `--batch-size` | `64` | Global batch size (single-GPU) |
+| `--workers` | `8` | DataLoader workers |
+| `--img-size` | `224` | Input image size |
+| `--max-lr` | `None` | Peak LR (if None, uses linear scaling rule `0.1 * (batch/256)`) |
+| `--pct-start` | `0.3` | Fraction of steps for LR warm-up (OneCycleLR) |
+| `--div-factor` | `25.0` | Initial LR = `max_lr/div_factor` |
+| `--final-div-factor` | `1e4` | Final LR = `max_lr/final_div_factor` |
+| `--no-amp` | `False` | Disable AMP if set |
+| `--use-class-style-aug` | `False` | Alternate augmentation style |
+| `--resume` | `False` | Resume from `checkpoints/<name>/checkpoint.pth` |
+| `--reports` | `False` | Generate classification report & save curves |
 
 ### 2.5 Repository layout
-*(to be filled later)*
+```
+week8_ERAV4_CIFAR_100_ResNetModel_Experiments/
+├─ train.py
+├─ model.py
+├─ lr_finder.py
+├─ dataset/
+│ └─ imagenet_mini.py
+├─ lr_finder_plots/                  # latest LR plot is embedded above
+├─ runs/r50_onecycle_amp/            # TensorBoard event files
+└─ out/
+│   ├─ r50_onecycle_amp/
+│      ├─ train_log.csv
+│      ├─ logs.md
+│      └─ out/
+└─ reports/
+│   ├─ r50_onecycle_amp/
+│       ├─ accuracy_curve.png
+│       ├─ classification_report.txt
+│       └─ confusion_matrix.csv
+│       ├─ loss_curve.png
+│       └─ model_summary.txt
+└─ images/
+│   ├─ {imagenet_samples.png,resnet50_arch.png}  # OPTIONAL:  images
+├─ update_readme.py
+├─ README.md
+
+```
 
 ---
 
-## 3) About ImageNet
-*(unchanged — kept as in your project)*
+## 3. About ImageNet
+
+**ImageNet** is one of the most influential datasets in computer vision research.  
+It contains over **14 million labeled images** organized into more than **22,000 categories**, and has become the foundation for evaluating and benchmarking deep neural networks for image classification and object recognition.
+
+For this iteration, we use **ImageNet-Mini**, a curated **1,000-class subset (~4 GB)** derived from the ImageNet-1K dataset.  
+It maintains the same structure and class diversity but is dramatically smaller, making it ideal for **rapid experimentation**, **debugging pipelines**, and **prototyping architectures** locally before scaling to full ImageNet-1K.
+
+**Key Highlights:**
+- 📚 **Standard Benchmark:** Widely used for assessing model accuracy and robustness.  
+- ⚙️ **Lightweight & Scalable:** Enables faster iteration on consumer GPUs.  
+- 🎯 **Diverse Classes:** Includes animals, vehicles, natural scenes, and household objects.  
+- 🧩 **Transfer Learning Hub:** Models pretrained on ImageNet form the backbone of countless computer-vision systems.
+
+### Sample Classes and Images
+
+![ImageNet Samples](images/imagenet_images.png)  
+*ImageNet-Mini sample classes and images.*
 
 ---
 
-## 4) About ResNet-50
-*(unchanged — kept as in your project)*
+## 4. About ResNet-50
+
+**ResNet-50** (He et al., 2015) is a deep convolutional neural network consisting of **50 layers** built on the concept of *residual learning*.  
+Residual connections (skip connections) allow gradients to flow more effectively through very deep networks, mitigating the **vanishing-gradient problem** and enabling the successful training of extremely deep CNNs.
+
+**Key Features:**
+- 🧩 **Residual Blocks:** Learn identity mappings that help deeper networks converge faster.  
+- ⚙️ **Bottleneck Design:** Uses 1×1, 3×3, and 1×1 convolutions to balance accuracy and computation.  
+- 🧠 **Depth:** 48 convolutional + 1 max-pool + 1 average-pool + 1 fully-connected layer (≈ 25.6 M parameters).  
+- 🎯 **Input:** 224 × 224 × 3 images  **Output:** 1000 classes (ImageNet-1K).  
+- 🚀 **Impact:** ResNet architectures revolutionized deep learning and remain a standard backbone for modern vision models.
+
+### Architecture Diagram
+
+![ResNet-50 Architecture](images/ResNet_50_architecture.png)  
+*Residual Networks (ResNet-50) architecture.*
 
 ---
 
