@@ -2,180 +2,82 @@
 # -*- coding: utf-8 -*-
 
 """
-Auto-generate README.md for ImageNet-Mini ResNet-50 run `r50_onecycle_amp`.
+update_readme.py
+Auto-fills README.md (Sections 1 & 5) with metrics from out/<RUN>/train_log.csv
+and leaves Sections 3 & 4 untouched.
 
-What this script does:
-- Pick latest LR-Finder plot from lr_finder_plots/ and swap into README
-- Fill the metrics table (best/final Top-1/Top-5/Loss/IPS) from out/<exp>/train_log.csv
-- Inject file contents into collapsible sections:
-  * out/<exp>/logs.md
-  * reports/<exp>/model_summary.txt
-  * reports/<exp>/classification_report.txt  (only accuracy/macro avg/weighted avg lines)
+Usage:
+    python update_readme.py --exp <RUN_NAME>
+    # if --exp is omitted, the newest out/* having train_log.csv is used
 """
-
-from __future__ import annotations
-import csv
-import re
+import argparse
 from pathlib import Path
-from typing import Optional, List
+import pandas as pd
 
-EXP_NAME = "r50_onecycle_amp"
 ROOT = Path(__file__).resolve().parent
-
-DIR_LR = ROOT / "lr_finder_plots"
-DIR_OUT = ROOT / "out" / EXP_NAME
-DIR_REPORTS = ROOT / "reports" / EXP_NAME
 README_PATH = ROOT / "README.md"
 
-# ---- Helpers -----------------------------------------------------------------
-def normalize_newlines(s: str) -> str:
-    return s.replace("\r\n", "\n").replace("\r", "\n")
+def find_latest_exp() -> str:
+    out_dir = ROOT / "out"
+    if not out_dir.exists():
+        return ""
+    cands = sorted(out_dir.glob("*"), key=lambda p: p.stat().st_mtime, reverse=True)
+    for c in cands:
+        if (c / "train_log.csv").exists():
+            return c.name
+    return ""
 
-def newest_file(folder: Path, pattern: str = "*.png") -> Optional[Path]:
-    if not folder.exists():
-        return None
-    files = sorted(folder.glob(pattern), key=lambda p: p.stat().st_mtime, reverse=True)
-    return files[0] if files else None
+def parse_args():
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--exp", default=None, help="Experiment folder name under out/")
+    return ap.parse_args()
 
-def read_train_log(csv_path: Path):
-    """Return dict of best/final metrics from val rows in your CSV."""
+def load_metrics(exp_name: str):
+    csv_path = ROOT / "out" / exp_name / "train_log.csv"
     if not csv_path.exists():
-        return {}
-    vals = []
-    with csv_path.open("r", encoding="utf-8") as f:
-        reader = csv.DictReader(f)
-        for r in reader:
-            if r.get("phase") != "val":
-                continue
-            try:
-                vals.append(
-                    dict(
-                        epoch=int(r["epoch"]),
-                        loss=float(r["loss"]),
-                        top1=float(r["top1"]),
-                        top5=float(r["top5"]),
-                        ips=float(r["imgs_per_sec"]),
-                    )
-                )
-            except Exception:
-                continue
-    if not vals:
-        return {}
-    vals.sort(key=lambda x: x["epoch"])
-    final = vals[-1]
-    best = max(vals, key=lambda x: x["top1"])
-    return {
-        "best_top1": f'{best["top1"]:.2f}',
-        "best_top5": f'{best["top5"]:.2f}',
-        "best_loss": f'{best["loss"]:.4f}',
-        "best_ips": f'{best["ips"]:.1f}',
-        "final_top1": f'{final["top1"]:.2f}',
-        "final_top5": f'{final["top5"]:.2f}',
-        "final_loss": f'{final["loss"]:.4f}',
-        "final_ips": f'{final["ips"]:.1f}',
+        raise FileNotFoundError(f"Missing CSV: {csv_path}")
+    df = pd.read_csv(csv_path)
+    if "phase" not in df.columns:
+        raise ValueError(f"'phase' column missing in {csv_path}")
+    df_val = df[df["phase"] == "val"].copy()
+    if df_val.empty:
+        raise ValueError(f"No 'val' rows found in {csv_path}")
+    # Find best top1 (max)
+    df_val["top1"] = df_val["top1"].astype(float)
+    df_val["top5"] = df_val["top5"].astype(float)
+    best_idx = df_val["top1"].idxmax()
+    best_row = df_val.loc[best_idx]
+    best_top1 = float(best_row["top1"])
+    best_top5 = float(best_row["top5"])
+    best_epoch = int(best_row["epoch"])
+    return best_top1, best_top5, best_epoch
+
+def fill_tokens(md: str, run_name: str, best_top1: float, best_top5: float, best_epoch: int) -> str:
+    tokens = {
+        "{{RUN_NAME}}": run_name,
+        "{{BEST_TOP1}}": f"{best_top1:.2f}%",
+        "{{BEST_TOP5}}": f"{best_top5:.2f}%",
+        "{{BEST_EPOCH}}": str(best_epoch),
     }
-
-def read_text(p: Path, limit: int = 80000) -> Optional[str]:
-    """Read text file; truncate if huge to keep README snappy."""
-    if not p.exists():
-        return None
-    s = p.read_text(encoding="utf-8", errors="ignore")
-    if limit and len(s) > limit:
-        s = s[:limit].rstrip() + "\n… (truncated)\n"
-    return s
-
-def extract_cls_toplines(txt: Optional[str]) -> Optional[str]:
-    """Return only accuracy/macro avg/weighted avg lines from sklearn report."""
-    if not txt:
-        return None
-    wanted: List[str] = []
-    for line in txt.splitlines():
-        low = line.strip().lower()
-        if low.startswith("accuracy") or low.startswith("macro avg") or low.startswith("weighted avg"):
-            wanted.append(line.rstrip())
-    return "\n".join(wanted) if wanted else None
-
-# ---- Main --------------------------------------------------------------------
+    for k, v in tokens.items():
+        md = md.replace(k, v)
+    return md
 
 def main():
-    # Read artifacts
-    lr_latest = newest_file(DIR_LR, "*.png")
-    metrics = read_train_log(DIR_OUT / "train_log.csv")
-    logs_md = read_text(DIR_OUT / "logs.md")
-    model_summary = read_text(DIR_REPORTS / "model_summary.txt")
-    cls_report_top = extract_cls_toplines(read_text(DIR_REPORTS / "classification_report.txt", limit=200000))
+    args = parse_args()
+    exp = args.exp or find_latest_exp()
+    if not exp:
+        raise SystemExit("No experiment found under out/* with train_log.csv. Provide --exp <RUN_NAME>.")
+    best_top1, best_top5, best_epoch = load_metrics(exp)
 
-    logs_md = normalize_newlines(logs_md) if logs_md else None
-    model_summary = normalize_newlines(model_summary) if model_summary else None
-    cls_report_top = normalize_newlines(cls_report_top) if cls_report_top else None
+    if not README_PATH.exists():
+        raise FileNotFoundError(f"README not found: {README_PATH}")
+    content = README_PATH.read_text(encoding="utf-8")
 
-    # Optional: drop duplicate title line from logs
-    if logs_md and logs_md.lstrip().startswith("# Training Logs"):
-        first_nl = logs_md.find("\n")
-        if first_nl != -1:
-            logs_md = logs_md[first_nl+1:].lstrip()
+    content_new = fill_tokens(content, exp, best_top1, best_top5, best_epoch)
 
-    # Load README
-    content = README_PATH.read_text(encoding="utf-8") if README_PATH.exists() else ""
-
-    # 1) Swap LR-Finder image token (if your README uses a fixed filename, keep this)
-    if lr_latest:
-        content = content.replace("REPLACE_WITH_LATEST.png", lr_latest.name)
-
-    # 2) Fill the metrics table by replacing the first eight "…" in that table.
-    #    This assumes the table lines in README use "…" placeholders for metrics.
-    #    To avoid touching any other ellipses elsewhere, limit replacement to the Metrics block.
-    def fill_metrics_block(md: str) -> str:
-        pattern = r"(\| Split \| Top-1.*?\n)([\s\S]*?)(\n\n|---\n|\Z)"
-        m = re.search(pattern, md)
-        if not m or not metrics:
-            return md
-        block = m.group(0)
-        # Replace in order of appearance: best_top1, best_top5, best_loss, best_ips, final_top1, final_top5, final_loss, final_ips
-        seq = [
-            metrics.get("best_top1", "…"),
-            metrics.get("best_top5", "…"),
-            metrics.get("best_loss", "…"),
-            metrics.get("best_ips", "…"),
-            metrics.get("final_top1", "…"),
-            metrics.get("final_top5", "…"),
-            metrics.get("final_loss", "…"),
-            metrics.get("final_ips", "…"),
-        ]
-        new_block = block
-        for v in seq:
-            new_block = new_block.replace("…", v, 1)
-        return md.replace(block, new_block)
-    content = fill_metrics_block(content)
-
-    # 3) Inject logs.md into its placeholder
-    if logs_md:
-        content = content.replace(
-            "… (inserted from out/r50_onecycle_amp/logs.md) …",
-            logs_md.strip()
-        )
-
-    # 4) Inject model_summary.txt into its placeholder
-    if model_summary:
-        content = content.replace(
-            "… (inserted from reports/r50_onecycle_amp/model_summary.txt) …",
-            model_summary.strip()
-        )
-
-    # 5) Inject classification report toplines into the three-line placeholder block
-    if cls_report_top:
-        # Replace the entire three-line placeholder where it appears inside a code fence
-        content = content.replace(
-            "accuracy …  \nmacro avg …  \nweighted avg …",
-            cls_report_top
-        ).replace(
-            "accuracy …\nmacro avg …\nweighted avg …",
-            cls_report_top
-        )
-
-    # Write README back
-    README_PATH.write_text(content, encoding="utf-8")
-    print("[ok] README.md updated with LR plot, metrics, and embedded logs/summary/report.")
+    README_PATH.write_text(content_new, encoding="utf-8")
+    print(f"[ok] README.md updated with run '{exp}': best_top1={best_top1:.2f} best_top5={best_top5:.2f} epoch={best_epoch}")
 
 if __name__ == "__main__":
     main()
