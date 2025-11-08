@@ -470,6 +470,21 @@ def parse_args():
 
     return p.parse_args()
 
+# ---- Constant-LR shim so we can keep LR fixed across steps ----
+# --- Frozen LR scheduler (keeps LR constant) ---
+class FrozenLRSched(torch.optim.lr_scheduler._LRScheduler):
+    def __init__(self, optimizer, const_lr: float):
+        self._const_lr = float(const_lr)
+        super().__init__(optimizer, last_epoch=-1, verbose=False)
+        # ensure LR is set before first batch
+        for g in self.optimizer.param_groups:
+            g["lr"] = self._const_lr
+
+    def get_lr(self):
+        # torch expects a list, one per param group
+        return [self._const_lr for _ in self.optimizer.param_groups]
+
+
 # ---------------------- Main ----------------------
 def main():
     args = parse_args()
@@ -615,30 +630,282 @@ def main():
         except Exception as e:
             print(f"[warn] TensorBoard disabled: {e}")
 
-    # ---------- Resume ----------
+    # ---------- Resume from 0 to 120 Epoch ----------
+    # start_epoch = 0
+    # best_top1 = 0.0
+    # if args.resume and Path(args.resume).is_file():
+    #     ckpt = torch.load(args.resume, map_location='cpu')
+    #     sd = ckpt.get("model", ckpt)
+    #     if isinstance(model, DDP):
+    #         model.module.load_state_dict(sd, strict=False)
+    #     else:
+    #         model.load_state_dict(sd, strict=False)
+    #     if "optimizer" in ckpt:
+    #         optimizer.load_state_dict(ckpt["optimizer"])
+    #     if "scaler" in ckpt and args.amp:
+    #         scaler.load_state_dict(ckpt["scaler"])
+    #     if "scheduler" in ckpt:
+    #         try: scheduler.load_state_dict(ckpt["scheduler"])
+    #         except Exception: pass
+    #     start_epoch = int(ckpt.get("epoch", -1)) + 1
+    #     best_top1 = float(ckpt.get("best_top1", 0.0))
+    #     if is_main_process():
+    #         print(f"=> Resumed from {args.resume} @ epoch {start_epoch} (best_top1={best_top1:.2f})")
+    #     resume_name = Path(args.resume).name
+    #     if resume_name.startswith("best_acc_epoch") and resume_name.endswith(".pth"):
+    #         prev_best_ckpt_path = Path(args.resume)
+
+    ## From 120 to 160 Epochs
+    # start_epoch = 0
+    # best_top1 = 0.0
+    # if args.resume and Path(args.resume).is_file():
+    #     ckpt = torch.load(args.resume, map_location='cpu')
+    #     sd = ckpt.get("model", ckpt)
+    #     if isinstance(model, DDP):
+    #         model.module.load_state_dict(sd, strict=False)
+    #     else:
+    #         model.load_state_dict(sd, strict=False)
+
+    #     if "optimizer" in ckpt:
+    #         optimizer.load_state_dict(ckpt["optimizer"])
+
+    #     # ✅ keep AMP scaler load
+    #     if args.amp and "scaler" in ckpt:
+    #         try:
+    #             scaler.load_state_dict(ckpt["scaler"])
+    #         except Exception as e:
+    #             print(f"[warn] scaler load skipped: {e}")
+
+    #     # ✅ scheduler: either continue exactly, or rebuild & advance
+    #     reset_sched = bool(os.environ.get("RESET_SCHED", ""))
+    #     if ("scheduler" in ckpt) and (not reset_sched):
+    #         try:
+    #             scheduler.load_state_dict(ckpt["scheduler"])
+    #         except Exception as e:
+    #             print(f"[warn] scheduler load skipped, will rebuild: {e}")
+    #             reset_sched = True
+
+    #     start_epoch = int(ckpt.get("epoch", -1)) + 1
+    #     best_top1 = float(ckpt.get("best_top1", 0.0))
+    #     if is_main_process():
+    #         print(f"=> Resumed from {args.resume} @ epoch {start_epoch} (best_top1={best_top1:.2f})")
+
+    #     if reset_sched:
+    #         # align new OneCycle to start of epoch `start_epoch`
+    #         scheduler.last_epoch = (start_epoch * args.steps_per_epoch) - 1
+    #         # sync optimizer LR to scheduler before first batch
+    #         try:
+    #             for g, lr in zip(optimizer.param_groups, scheduler.get_last_lr()):
+    #                 g["lr"] = lr
+    #         except Exception as e:
+    #             print(f"[warn] could not sync LR: {e}")
+
+    #     resume_name = Path(args.resume).name
+    #     if resume_name.startswith("best_acc_epoch") and resume_name.endswith(".pth"):
+    #         prev_best_ckpt_path = Path(args.resume)
+
+    # ---------- Resume 160 to 175 ----------
+    # start_epoch = 0
+    # best_top1 = 0.0
+    # if args.resume and Path(args.resume).is_file():
+    #     ckpt = torch.load(args.resume, map_location='cpu')
+    #     sd = ckpt.get("model", ckpt)
+
+    #     # model weights
+    #     if isinstance(model, DDP):
+    #         model.module.load_state_dict(sd, strict=False)
+    #     else:
+    #         model.load_state_dict(sd, strict=False)
+
+    #     # optimizer state (restores momentum, etc.)
+    #     if "optimizer" in ckpt:
+    #         optimizer.load_state_dict(ckpt["optimizer"])
+
+    #     # remember the LR that came from the optimizer state (for clamping)
+    #     try:
+    #         resumed_lr = min(g["lr"] for g in optimizer.param_groups)
+    #     except Exception:
+    #         resumed_lr = None
+
+    #     # AMP scaler (safe to skip if not present)
+    #     if args.amp and "scaler" in ckpt:
+    #         try:
+    #             scaler.load_state_dict(ckpt["scaler"])
+    #         except Exception as e:
+    #             print(f"[warn] scaler load skipped: {e}")
+
+    #     # scheduler: continue exactly if we load it; otherwise rebuild & align
+    #     reset_sched = bool(os.environ.get("RESET_SCHED", ""))  # set to 1 when extending total epochs
+    #     if ("scheduler" in ckpt) and (not reset_sched):
+    #         try:
+    #             scheduler.load_state_dict(ckpt["scheduler"])
+    #         except Exception as e:
+    #             print(f"[warn] scheduler load failed, will rebuild & align: {e}")
+    #             reset_sched = True
+
+    #     start_epoch = int(ckpt.get("epoch", -1)) + 1
+    #     best_top1 = float(ckpt.get("best_top1", 0.0))
+    #     if is_main_process():
+    #         print(f"=> Resumed from {args.resume} @ epoch {start_epoch} (best_top1={best_top1:.2f})")
+
+    #     if reset_sched:
+    #         # We rebuilt OneCycle for a NEW total --epochs. Align to the start of `start_epoch`.
+    #         scheduler.last_epoch = (start_epoch * args.steps_per_epoch) - 1
+
+    #         # Sync optimizer LR to scheduler, but DO NOT jump upward:
+    #         # clamp scheduler LR to the resumed LR so the first batch cannot overshoot.
+    #         try:
+    #             sched_lrs = scheduler.get_last_lr()
+    #             for g, s_lr in zip(optimizer.param_groups, sched_lrs):
+    #                 g["lr"] = min(resumed_lr, s_lr) if resumed_lr is not None else s_lr
+    #         except Exception as e:
+    #             print(f"[warn] LR sync/clamp skipped: {e}")
+    #     else:
+    #         # We loaded the old scheduler state; just ensure optimizer LR matches its current LR.
+    #         try:
+    #             sched_lrs = scheduler.get_last_lr()
+    #             for g, s_lr in zip(optimizer.param_groups, sched_lrs):
+    #                 g["lr"] = s_lr
+    #         except Exception:
+    #             pass
+
+    #     # Track previous "best" checkpoint file if resuming from a best_* file
+    #     resume_name = Path(args.resume).name
+    #     if resume_name.startswith("best_acc_epoch") and resume_name.endswith(".pth"):
+    #         prev_best_ckpt_path = Path(args.resume)
+
+    # ---------- Resume (generic: supports extend-epochs and constant-LR) ----------
+    # ---------- Resume / Scheduler logic (robust for extend/reduce/freeze) ----------
     start_epoch = 0
     best_top1 = 0.0
+    ckpt = None  # keep handle for LR fallbacks
+
     if args.resume and Path(args.resume).is_file():
         ckpt = torch.load(args.resume, map_location='cpu')
         sd = ckpt.get("model", ckpt)
+
+        # 1) model weights
         if isinstance(model, DDP):
             model.module.load_state_dict(sd, strict=False)
         else:
             model.load_state_dict(sd, strict=False)
+
+        # 2) optimizer (restores momentum/buffers/LR)
         if "optimizer" in ckpt:
             optimizer.load_state_dict(ckpt["optimizer"])
-        if "scaler" in ckpt and args.amp:
-            scaler.load_state_dict(ckpt["scaler"])
-        if "scheduler" in ckpt:
-            try: scheduler.load_state_dict(ckpt["scheduler"])
-            except Exception: pass
+
+        # 3) AMP scaler (safe to skip if missing)
+        if args.amp and "scaler" in ckpt:
+            try:
+                scaler.load_state_dict(ckpt["scaler"])
+            except Exception as e:
+                print(f"[warn] scaler load skipped: {e}")
+
+        # Where to start
         start_epoch = int(ckpt.get("epoch", -1)) + 1
         best_top1 = float(ckpt.get("best_top1", 0.0))
         if is_main_process():
             print(f"=> Resumed from {args.resume} @ epoch {start_epoch} (best_top1={best_top1:.2f})")
+
+        # Continue old scheduler exactly, or rebuild for new --epochs?
+        reset_sched = bool(os.environ.get("RESET_SCHED", ""))  # set to 1 when you changed --epochs
+        if ("scheduler" in ckpt) and (not reset_sched):
+            try:
+                scheduler.load_state_dict(ckpt["scheduler"])
+            except Exception as e:
+                print(f"[warn] scheduler load failed, will rebuild & align: {e}")
+                reset_sched = True
+
+        if reset_sched:
+            # We rebuilt OneCycle for a NEW total --epochs. Align at start of `start_epoch`.
+            scheduler.last_epoch = (start_epoch * args.steps_per_epoch) - 1
+
+            # Sync optimizer LR to scheduler, but never jump upwards on first batch.
+            try:
+                sched_lrs = scheduler.get_last_lr()
+                # prefer current optimizer LR if non-zero, else use scheduler's
+                opt_lrs = [g.get("lr", 0.0) for g in optimizer.param_groups]
+                if any(lr > 0.0 for lr in opt_lrs):
+                    resumed_lr = min(l for l in opt_lrs if l > 0.0)
+                    for g, s_lr in zip(optimizer.param_groups, sched_lrs):
+                        g["lr"] = min(resumed_lr, s_lr)
+                else:
+                    for g, s_lr in zip(optimizer.param_groups, sched_lrs):
+                        g["lr"] = s_lr
+            except Exception as e:
+                print(f"[warn] LR sync/clamp skipped: {e}")
+        else:
+            # Using the loaded scheduler: ensure optimizer LR equals scheduler LR now
+            try:
+                sched_lrs = scheduler.get_last_lr()
+                for g, s_lr in zip(optimizer.param_groups, sched_lrs):
+                    g["lr"] = s_lr
+            except Exception:
+                pass
+
+        # Track previous "best" file if resuming from a best_* checkpoint
         resume_name = Path(args.resume).name
         if resume_name.startswith("best_acc_epoch") and resume_name.endswith(".pth"):
             prev_best_ckpt_path = Path(args.resume)
+    else:
+        ckpt = None  # no resume
+
+    # ---------- Optional: FREEZE LR for the whole run ----------
+    if os.environ.get("FREEZE_LR", ""):
+        const_lr = None
+
+        # (1) explicit env value wins
+        const_from_env = os.environ.get("FREEZE_LR_VALUE", "").strip()
+        if const_from_env:
+            try:
+                const_lr = float(const_from_env)
+            except Exception:
+                print(f"[warn] FREEZE_LR_VALUE invalid: {const_from_env}")
+
+        # (2) otherwise, prefer current optimizer LR (post-resume/sync)
+        if const_lr is None:
+            try:
+                opt_lrs = [g.get("lr", 0.0) for g in optimizer.param_groups]
+                if any(lr > 0.0 for lr in opt_lrs):
+                    const_lr = max(opt_lrs)
+            except Exception:
+                pass
+
+        # (3) otherwise, try scheduler’s current LR
+        if const_lr is None:
+            try:
+                sched_lrs = scheduler.get_last_lr()
+                if any(lr > 0.0 for lr in sched_lrs):
+                    const_lr = max(sched_lrs)
+            except Exception:
+                pass
+
+        # (4) otherwise, try LR saved in ckpt's optimizer
+        if const_lr is None and ckpt is not None and "optimizer" in ckpt:
+            try:
+                pg = ckpt["optimizer"]["param_groups"]
+                saved_lrs = [g.get("lr", 0.0) for g in pg]
+                if any(lr > 0.0 for lr in saved_lrs):
+                    const_lr = max(saved_lrs)
+            except Exception:
+                pass
+
+        # (5) final sane fallback: initial warmup LR
+        if const_lr is None:
+            const_lr = float(scaled_max_lr / args.div_factor)
+
+        # install frozen scheduler and sync optimizer
+        scheduler = FrozenLRSched(optimizer, const_lr)
+        args.scheduler = scheduler  # your train loop calls args.scheduler.step()
+        for g in optimizer.param_groups:
+            g["lr"] = const_lr
+        if is_main_process():
+            print(f"FREEZE_LR on: using constant LR = {const_lr:.8f} for the whole run")
+    else:
+        # keep args.scheduler pointing at the active scheduler
+        args.scheduler = scheduler
+
+
 
     # ---------- Initial sanity val ----------
     if val_loader is not None:
@@ -659,6 +926,9 @@ def main():
                         'val/top5': init_val['top5'],
                         'lr': lr_now
                     })
+                    wandb.run.summary["val/initial_loss"] = float(init_val['loss'])
+                    wandb.run.summary["val/initial_top1"] = float(init_val['top1'])
+                    wandb.run.summary["val/initial_top5"] = float(init_val['top5'])
                     #print("[W&B] initial passed")
                 except Exception as e:
                     print(f"[W&B] initial log failed: {e}")
@@ -705,6 +975,16 @@ def main():
                         'val/top5': val_stats['top5']
                     })
                     #print("[W&B] epoch log passed")
+                    # === NEW: keep Run summary (what the CLI prints) up to date ===
+                    wandb.run.summary["last_epoch"]      = int(epoch)
+                    wandb.run.summary["last_lr"]         = float(lr_now)
+                    wandb.run.summary["train/last_loss"] = float(train_stats["loss"])
+                    wandb.run.summary["train/last_top1"] = float(train_stats["top1"])
+                    wandb.run.summary["train/last_top5"] = float(train_stats["top5"])
+                    wandb.run.summary["val/last_loss"]   = float(val_stats["loss"])
+                    wandb.run.summary["val/last_top1"]   = float(val_stats["top1"])
+                    wandb.run.summary["val/last_top5"]   = float(val_stats["top5"])
+
                 except Exception as e:
                     print(f"[W&B] epoch log failed: {e}")
 
@@ -745,6 +1025,13 @@ def main():
                             #print(f"[ckpt] deleted previous best: {prev_best_ckpt_path.name}")
                         except Exception as e:
                             print(f"[ckpt] could not delete previous best: {e}")
+                                        # === NEW: show best in Run summary too ===
+                    if wb_run is not None:
+                        try:
+                            wandb.run.summary["val/best_top1"]  = float(best_top1)
+                            wandb.run.summary["val/best_epoch"] = int(epoch)
+                        except Exception as e:
+                            print(f"[W&B] summary best update failed: {e}")
 
                     # Save the new best
                     torch.save(state, new_best_path)
@@ -943,6 +1230,10 @@ def main():
                 print(f"[W&B] report artifact upload skipped: {e}")
             finally:
                 try:
+                    if 'val_stats' in locals():
+                        wandb.run.summary["final/val_loss"] = float(val_stats.get("loss", 0.0))
+                        wandb.run.summary["final/val_top1"] = float(val_stats.get("top1", 0.0))
+                        wandb.run.summary["final/val_top5"] = float(val_stats.get("top5", 0.0))
                     wb_run.finish()
                 except Exception:
                     pass
