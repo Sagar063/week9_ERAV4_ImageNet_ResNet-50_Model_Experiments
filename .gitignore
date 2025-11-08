@@ -76,4 +76,6 @@ logs/g5x_1gpu_run/
 wandb/
 # optionally ignore all logs:
 # logs/
-!out/**/train_log.csv
+!out/**/train_log.csvcheckpoints/
+checkpoints
+wandb
