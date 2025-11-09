@@ -605,7 +605,8 @@ def main():
     if is_main_process():
         print(f"=> using max_lr: {scaled_max_lr:.6f} (arg --max-lr {'set' if args.max_lr is not None else 'auto-scale'})")
 
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device)
+    #criterion = nn.CrossEntropyLoss(label_smoothing=0.1).to(device) # was active until training of 185 epochsw
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.05).to(device) # Changes done to train from 185 to 190 epoch in hope to icnrease val accuracy
     optimizer = optim.SGD(model.parameters(), lr=scaled_max_lr / args.div_factor,
                           momentum=0.9, weight_decay=1e-4, nesterov=False)
     #scaler = torch.cuda.amp.GradScaler(enabled=args.amp)
