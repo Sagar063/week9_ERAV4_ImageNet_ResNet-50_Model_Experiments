@@ -1,324 +1,324 @@
                                 precision    recall  f1-score   support
 
-                         tench       0.98      0.90      0.94        50
+                         tench       1.00      0.90      0.95        50
                       goldfish       0.96      0.92      0.94        50
              great_white_shark       0.87      0.82      0.85        50
-                   tiger_shark       0.78      0.84      0.81        50
+                   tiger_shark       0.79      0.84      0.82        50
                     hammerhead       0.83      0.86      0.84        50
-                  electric_ray       0.89      0.84      0.87        50
+                  electric_ray       0.91      0.84      0.88        50
                       stingray       0.86      0.86      0.86        50
                           cock       0.84      0.74      0.79        50
                            hen       0.83      0.86      0.84        50
-                       ostrich       0.98      0.98      0.98        50
-                     brambling       0.89      1.00      0.94        50
-                     goldfinch       0.96      0.96      0.96        50
+                       ostrich       0.98      1.00      0.99        50
+                     brambling       0.89      0.98      0.93        50
+                     goldfinch       0.94      0.96      0.95        50
                    house_finch       0.94      0.92      0.93        50
                          junco       0.98      1.00      0.99        50
                 indigo_bunting       0.98      0.96      0.97        50
                          robin       0.91      0.98      0.94        50
-                        bulbul       0.88      0.88      0.88        50
+                        bulbul       0.86      0.88      0.87        50
                            jay       0.96      0.90      0.93        50
                         magpie       0.92      0.94      0.93        50
-                     chickadee       0.98      0.96      0.97        50
+                     chickadee       0.98      0.94      0.96        50
                    water_ouzel       0.96      0.86      0.91        50
-                          kite       0.84      0.76      0.80        50
-                    bald_eagle       0.92      0.98      0.95        50
-                       vulture       0.92      0.96      0.94        50
+                          kite       0.86      0.76      0.81        50
+                    bald_eagle       0.94      0.98      0.96        50
+                       vulture       0.89      0.96      0.92        50
                 great_grey_owl       1.00      0.98      0.99        50
       European_fire_salamander       0.92      0.96      0.94        50
-                   common_newt       0.60      0.58      0.59        50
-                           eft       0.83      0.78      0.80        50
+                   common_newt       0.59      0.58      0.59        50
+                           eft       0.85      0.78      0.81        50
             spotted_salamander       0.81      0.88      0.85        50
                        axolotl       0.92      0.96      0.94        50
-                      bullfrog       0.77      0.80      0.78        50
+                      bullfrog       0.75      0.80      0.78        50
                      tree_frog       0.84      0.92      0.88        50
                    tailed_frog       0.67      0.48      0.56        50
                     loggerhead       0.77      0.82      0.80        50
             leatherback_turtle       0.83      0.70      0.76        50
-                    mud_turtle       0.63      0.68      0.65        50
-                      terrapin       0.63      0.58      0.60        50
+                    mud_turtle       0.63      0.66      0.65        50
+                      terrapin       0.59      0.58      0.59        50
                     box_turtle       0.78      0.84      0.81        50
-                  banded_gecko       0.98      0.90      0.94        50
+                  banded_gecko       1.00      0.88      0.94        50
                  common_iguana       0.70      0.86      0.77        50
             American_chameleon       0.64      0.72      0.68        50
                       whiptail       0.83      0.90      0.87        50
-                         agama       0.80      0.82      0.81        50
+                         agama       0.79      0.82      0.80        50
                 frilled_lizard       0.94      0.88      0.91        50
               alligator_lizard       0.76      0.70      0.73        50
                   Gila_monster       0.98      0.80      0.88        50
                   green_lizard       0.50      0.56      0.53        50
-             African_chameleon       0.93      0.78      0.85        50
+             African_chameleon       0.91      0.78      0.84        50
                  Komodo_dragon       0.87      0.92      0.89        50
-             African_crocodile       0.83      0.80      0.82        50
-            American_alligator       0.86      0.86      0.86        50
-                   triceratops       0.96      0.98      0.97        50
-                 thunder_snake       0.78      0.78      0.78        50
-                ringneck_snake       0.84      0.92      0.88        50
-                 hognose_snake       0.76      0.64      0.70        50
-                   green_snake       0.72      0.68      0.70        50
-                    king_snake       0.84      0.92      0.88        50
-                  garter_snake       0.88      0.86      0.87        50
-                   water_snake       0.63      0.76      0.69        50
+             African_crocodile       0.82      0.80      0.81        50
+            American_alligator       0.88      0.88      0.88        50
+                   triceratops       0.96      0.96      0.96        50
+                 thunder_snake       0.80      0.78      0.79        50
+                ringneck_snake       0.85      0.92      0.88        50
+                 hognose_snake       0.72      0.62      0.67        50
+                   green_snake       0.71      0.64      0.67        50
+                    king_snake       0.87      0.92      0.89        50
+                  garter_snake       0.88      0.84      0.86        50
+                   water_snake       0.62      0.80      0.70        50
                     vine_snake       0.89      0.68      0.77        50
-                   night_snake       0.43      0.40      0.41        50
-               boa_constrictor       0.78      0.84      0.81        50
-                   rock_python       0.78      0.62      0.69        50
-                  Indian_cobra       0.84      0.86      0.85        50
-                   green_mamba       0.74      0.74      0.74        50
+                   night_snake       0.42      0.40      0.41        50
+               boa_constrictor       0.79      0.84      0.82        50
+                   rock_python       0.74      0.62      0.67        50
+                  Indian_cobra       0.83      0.86      0.84        50
+                   green_mamba       0.71      0.74      0.73        50
                      sea_snake       0.86      0.76      0.81        50
-                  horned_viper       0.47      0.54      0.50        50
-                   diamondback       0.74      0.80      0.77        50
-                    sidewinder       0.58      0.36      0.44        50
+                  horned_viper       0.48      0.54      0.51        50
+                   diamondback       0.74      0.78      0.76        50
+                    sidewinder       0.59      0.40      0.48        50
                      trilobite       0.96      0.98      0.97        50
-                    harvestman       0.90      0.94      0.92        50
+                    harvestman       0.88      0.92      0.90        50
                       scorpion       0.82      0.94      0.88        50
   black_and_gold_garden_spider       0.71      0.94      0.81        50
-                   barn_spider       0.62      0.48      0.54        50
-                 garden_spider       0.63      0.62      0.63        50
+                   barn_spider       0.61      0.46      0.52        50
+                 garden_spider       0.62      0.62      0.62        50
                    black_widow       0.86      0.88      0.87        50
                      tarantula       0.94      0.94      0.94        50
                    wolf_spider       0.71      0.74      0.73        50
                           tick       0.90      0.76      0.83        50
-                     centipede       0.96      0.86      0.91        50
+                     centipede       0.95      0.80      0.87        50
                   black_grouse       0.92      0.92      0.92        50
                      ptarmigan       0.92      0.88      0.90        50
-                 ruffed_grouse       0.71      0.92      0.80        50
+                 ruffed_grouse       0.74      0.92      0.82        50
                prairie_chicken       1.00      0.92      0.96        50
                        peacock       0.98      0.94      0.96        50
-                         quail       0.94      0.90      0.92        50
-                     partridge       0.82      0.80      0.81        50
-                  African_grey       0.96      0.94      0.95        50
+                         quail       0.96      0.90      0.93        50
+                     partridge       0.80      0.80      0.80        50
+                  African_grey       0.98      0.94      0.96        50
                          macaw       0.96      0.96      0.96        50
-      sulphur-crested_cockatoo       0.96      0.92      0.94        50
+      sulphur-crested_cockatoo       0.94      0.92      0.93        50
                       lorikeet       0.98      1.00      0.99        50
-                        coucal       0.88      0.92      0.90        50
+                        coucal       0.90      0.92      0.91        50
                      bee_eater       0.98      0.96      0.97        50
                       hornbill       0.90      0.94      0.92        50
                    hummingbird       0.85      0.90      0.87        50
                        jacamar       0.90      0.94      0.92        50
                         toucan       0.92      0.90      0.91        50
                          drake       0.88      0.90      0.89        50
-        red-breasted_merganser       0.98      0.92      0.95        50
+        red-breasted_merganser       0.98      0.90      0.94        50
                          goose       0.84      0.82      0.83        50
                     black_swan       0.94      0.98      0.96        50
-                        tusker       0.63      0.72      0.67        50
+                        tusker       0.65      0.72      0.69        50
                        echidna       0.96      1.00      0.98        50
                       platypus       0.90      0.76      0.83        50
-                       wallaby       0.79      0.90      0.84        50
+                       wallaby       0.80      0.90      0.85        50
                          koala       0.96      0.92      0.94        50
                         wombat       0.87      0.82      0.85        50
-                     jellyfish       0.92      0.92      0.92        50
+                     jellyfish       0.92      0.94      0.93        50
                    sea_anemone       0.87      0.68      0.76        50
                    brain_coral       0.90      0.90      0.90        50
-                      flatworm       0.91      0.84      0.88        50
+                      flatworm       0.93      0.84      0.88        50
                       nematode       0.94      0.90      0.92        50
-                         conch       0.82      0.80      0.81        50
+                         conch       0.83      0.80      0.82        50
                          snail       0.86      0.88      0.87        50
-                          slug       0.86      0.84      0.85        50
-                      sea_slug       0.75      0.88      0.81        50
-                        chiton       0.98      0.92      0.95        50
-            chambered_nautilus       0.98      0.90      0.94        50
+                          slug       0.85      0.88      0.86        50
+                      sea_slug       0.77      0.86      0.81        50
+                        chiton       0.96      0.92      0.94        50
+            chambered_nautilus       0.96      0.90      0.93        50
                 Dungeness_crab       0.77      0.86      0.81        50
-                     rock_crab       0.58      0.66      0.62        50
+                     rock_crab       0.61      0.68      0.64        50
                   fiddler_crab       0.84      0.72      0.77        50
-                     king_crab       0.84      0.82      0.83        50
+                     king_crab       0.85      0.82      0.84        50
               American_lobster       0.91      0.84      0.88        50
-                 spiny_lobster       0.87      0.82      0.85        50
-                      crayfish       0.58      0.68      0.62        50
-                   hermit_crab       0.81      0.96      0.88        50
-                        isopod       0.88      0.70      0.78        50
+                 spiny_lobster       0.86      0.84      0.85        50
+                      crayfish       0.60      0.68      0.64        50
+                   hermit_crab       0.82      0.94      0.88        50
+                        isopod       0.87      0.68      0.76        50
                    white_stork       0.96      0.90      0.93        50
                    black_stork       0.91      0.84      0.88        50
                      spoonbill       0.94      0.98      0.96        50
-                      flamingo       0.98      0.96      0.97        50
+                      flamingo       1.00      0.96      0.98        50
              little_blue_heron       0.92      0.90      0.91        50
                 American_egret       0.84      0.92      0.88        50
-                       bittern       0.98      0.92      0.95        50
+                       bittern       0.98      0.90      0.94        50
                          crane       0.81      0.76      0.78        50
                        limpkin       0.96      0.96      0.96        50
-            European_gallinule       0.96      0.98      0.97        50
+            European_gallinule       0.94      0.98      0.96        50
                  American_coot       0.94      0.94      0.94        50
-                       bustard       0.94      0.94      0.94        50
-               ruddy_turnstone       0.86      0.98      0.92        50
-          red-backed_sandpiper       0.93      0.84      0.88        50
+                       bustard       0.96      0.94      0.95        50
+               ruddy_turnstone       0.88      0.98      0.92        50
+          red-backed_sandpiper       0.90      0.86      0.88        50
                       redshank       0.98      0.92      0.95        50
-                     dowitcher       0.90      0.94      0.92        50
-                 oystercatcher       0.96      0.96      0.96        50
-                       pelican       0.89      0.94      0.91        50
+                     dowitcher       0.90      0.92      0.91        50
+                 oystercatcher       0.94      0.96      0.95        50
+                       pelican       0.85      0.94      0.90        50
                   king_penguin       0.98      0.98      0.98        50
-                     albatross       0.91      0.98      0.94        50
-                    grey_whale       0.96      0.88      0.92        50
-                  killer_whale       0.91      0.98      0.94        50
-                        dugong       0.92      0.90      0.91        50
-                      sea_lion       0.83      0.86      0.84        50
-                     Chihuahua       0.52      0.64      0.58        50
+                     albatross       0.91      0.96      0.93        50
+                    grey_whale       0.94      0.88      0.91        50
+                  killer_whale       0.92      0.98      0.95        50
+                        dugong       0.90      0.90      0.90        50
+                      sea_lion       0.81      0.86      0.83        50
+                     Chihuahua       0.54      0.64      0.59        50
               Japanese_spaniel       0.95      0.78      0.86        50
-                   Maltese_dog       0.77      0.82      0.80        50
+                   Maltese_dog       0.76      0.82      0.79        50
                       Pekinese       0.83      0.90      0.87        50
-                      Shih-Tzu       0.74      0.80      0.77        50
+                      Shih-Tzu       0.72      0.82      0.77        50
               Blenheim_spaniel       0.90      0.92      0.91        50
                       papillon       0.85      0.94      0.90        50
-                   toy_terrier       0.85      0.56      0.67        50
-           Rhodesian_ridgeback       0.68      0.76      0.72        50
+                   toy_terrier       0.84      0.54      0.66        50
+           Rhodesian_ridgeback       0.70      0.74      0.72        50
                   Afghan_hound       0.94      0.98      0.96        50
                         basset       0.75      0.82      0.78        50
-                        beagle       0.66      0.92      0.77        50
+                        beagle       0.65      0.92      0.76        50
                     bloodhound       0.96      0.46      0.62        50
                       bluetick       0.89      0.94      0.91        50
-       black-and-tan_coonhound       0.86      0.62      0.72        50
+       black-and-tan_coonhound       0.89      0.62      0.73        50
                   Walker_hound       0.60      0.78      0.68        50
               English_foxhound       0.94      0.30      0.45        50
-                       redbone       0.79      0.82      0.80        50
-                        borzoi       0.89      0.96      0.92        50
-               Irish_wolfhound       0.83      0.68      0.75        50
-             Italian_greyhound       0.88      0.92      0.90        50
+                       redbone       0.82      0.82      0.82        50
+                        borzoi       0.89      0.98      0.93        50
+               Irish_wolfhound       0.82      0.66      0.73        50
+             Italian_greyhound       0.87      0.92      0.89        50
                        whippet       0.80      0.86      0.83        50
-                  Ibizan_hound       0.83      0.68      0.75        50
-            Norwegian_elkhound       0.85      0.88      0.86        50
+                  Ibizan_hound       0.85      0.66      0.74        50
+            Norwegian_elkhound       0.87      0.90      0.88        50
                     otterhound       0.95      0.72      0.82        50
-                        Saluki       0.86      0.86      0.86        50
-            Scottish_deerhound       0.87      0.90      0.88        50
-                    Weimaraner       0.92      0.94      0.93        50
-     Staffordshire_bullterrier       0.73      0.70      0.71        50
-American_Staffordshire_terrier       0.64      0.72      0.68        50
+                        Saluki       0.83      0.86      0.84        50
+            Scottish_deerhound       0.85      0.90      0.87        50
+                    Weimaraner       0.94      0.96      0.95        50
+     Staffordshire_bullterrier       0.74      0.70      0.72        50
+American_Staffordshire_terrier       0.63      0.72      0.67        50
             Bedlington_terrier       0.94      0.94      0.94        50
-                Border_terrier       0.83      0.86      0.84        50
-            Kerry_blue_terrier       0.96      0.90      0.93        50
-                 Irish_terrier       0.67      0.78      0.72        50
-               Norfolk_terrier       0.75      0.76      0.75        50
-               Norwich_terrier       0.73      0.82      0.77        50
+                Border_terrier       0.80      0.90      0.85        50
+            Kerry_blue_terrier       0.96      0.92      0.94        50
+                 Irish_terrier       0.65      0.72      0.69        50
+               Norfolk_terrier       0.73      0.76      0.75        50
+               Norwich_terrier       0.73      0.80      0.76        50
              Yorkshire_terrier       0.70      0.62      0.66        50
-       wire-haired_fox_terrier       0.98      0.80      0.88        50
-              Lakeland_terrier       0.68      0.76      0.72        50
+       wire-haired_fox_terrier       0.97      0.78      0.87        50
+              Lakeland_terrier       0.67      0.76      0.71        50
               Sealyham_terrier       0.96      0.90      0.93        50
-                      Airedale       0.88      0.86      0.87        50
-                         cairn       0.73      0.72      0.73        50
-            Australian_terrier       0.65      0.56      0.60        50
+                      Airedale       0.90      0.86      0.88        50
+                         cairn       0.75      0.76      0.75        50
+            Australian_terrier       0.68      0.54      0.60        50
                 Dandie_Dinmont       0.84      0.86      0.85        50
-                   Boston_bull       0.78      0.94      0.85        50
+                   Boston_bull       0.79      0.96      0.86        50
            miniature_schnauzer       0.82      0.74      0.78        50
-               giant_schnauzer       0.75      0.90      0.82        50
+               giant_schnauzer       0.73      0.90      0.80        50
             standard_schnauzer       0.87      0.92      0.89        50
-                Scotch_terrier       0.77      0.80      0.78        50
-               Tibetan_terrier       0.75      0.90      0.82        50
-                 silky_terrier       0.78      0.76      0.77        50
+                Scotch_terrier       0.75      0.80      0.78        50
+               Tibetan_terrier       0.75      0.88      0.81        50
+                 silky_terrier       0.76      0.76      0.76        50
    soft-coated_wheaten_terrier       0.83      0.78      0.80        50
    West_Highland_white_terrier       0.78      0.92      0.84        50
-                         Lhasa       0.80      0.72      0.76        50
-         flat-coated_retriever       0.75      0.88      0.81        50
-        curly-coated_retriever       0.91      0.82      0.86        50
-              golden_retriever       0.76      0.90      0.83        50
+                         Lhasa       0.81      0.70      0.75        50
+         flat-coated_retriever       0.74      0.86      0.80        50
+        curly-coated_retriever       0.89      0.82      0.85        50
+              golden_retriever       0.75      0.90      0.82        50
             Labrador_retriever       0.69      0.88      0.77        50
       Chesapeake_Bay_retriever       0.86      0.84      0.85        50
    German_short-haired_pointer       0.93      0.86      0.90        50
-                        vizsla       0.81      0.86      0.83        50
-                English_setter       0.77      0.88      0.82        50
-                  Irish_setter       0.93      0.86      0.90        50
+                        vizsla       0.79      0.84      0.82        50
+                English_setter       0.83      0.86      0.84        50
+                  Irish_setter       0.93      0.84      0.88        50
                  Gordon_setter       0.96      0.92      0.94        50
               Brittany_spaniel       0.84      0.94      0.89        50
                        clumber       0.94      0.90      0.92        50
               English_springer       0.79      0.96      0.86        50
         Welsh_springer_spaniel       0.88      0.90      0.89        50
-                cocker_spaniel       0.75      0.84      0.79        50
+                cocker_spaniel       0.76      0.84      0.80        50
                 Sussex_spaniel       0.97      0.70      0.81        50
-           Irish_water_spaniel       0.88      0.90      0.89        50
+           Irish_water_spaniel       0.88      0.88      0.88        50
                         kuvasz       0.86      0.76      0.81        50
-                    schipperke       0.81      0.84      0.82        50
+                    schipperke       0.77      0.88      0.82        50
                    groenendael       0.74      0.80      0.77        50
                       malinois       0.85      0.88      0.86        50
-                        briard       0.83      0.58      0.68        50
-                        kelpie       0.75      0.72      0.73        50
+                        briard       0.80      0.56      0.66        50
+                        kelpie       0.78      0.70      0.74        50
                       komondor       0.96      0.94      0.95        50
-          Old_English_sheepdog       0.96      0.94      0.95        50
-             Shetland_sheepdog       0.79      0.84      0.82        50
-                        collie       0.64      0.60      0.62        50
+          Old_English_sheepdog       0.94      0.94      0.94        50
+             Shetland_sheepdog       0.82      0.84      0.83        50
+                        collie       0.63      0.62      0.63        50
                  Border_collie       0.66      0.94      0.78        50
-          Bouvier_des_Flandres       0.86      0.74      0.80        50
-                    Rottweiler       0.80      0.90      0.85        50
-               German_shepherd       0.83      0.88      0.85        50
-                      Doberman       0.75      0.82      0.78        50
-            miniature_pinscher       0.80      0.82      0.81        50
-    Greater_Swiss_Mountain_dog       0.61      0.76      0.68        50
+          Bouvier_des_Flandres       0.83      0.76      0.79        50
+                    Rottweiler       0.76      0.88      0.81        50
+               German_shepherd       0.81      0.88      0.85        50
+                      Doberman       0.76      0.82      0.79        50
+            miniature_pinscher       0.82      0.82      0.82        50
+    Greater_Swiss_Mountain_dog       0.61      0.74      0.67        50
           Bernese_mountain_dog       0.83      1.00      0.91        50
                    Appenzeller       0.42      0.26      0.32        50
-                   EntleBucher       0.64      0.72      0.68        50
-                         boxer       0.76      0.74      0.75        50
-                  bull_mastiff       0.75      0.86      0.80        50
+                   EntleBucher       0.63      0.72      0.67        50
+                         boxer       0.79      0.74      0.76        50
+                  bull_mastiff       0.72      0.86      0.78        50
                Tibetan_mastiff       0.96      0.92      0.94        50
-                French_bulldog       0.82      0.92      0.87        50
-                    Great_Dane       0.80      0.66      0.73        50
-                 Saint_Bernard       0.96      0.92      0.94        50
-                    Eskimo_dog       0.42      0.48      0.45        50
-                      malamute       0.70      0.76      0.73        50
-                Siberian_husky       0.57      0.58      0.57        50
-                     dalmatian       0.89      0.96      0.92        50
+                French_bulldog       0.79      0.92      0.85        50
+                    Great_Dane       0.82      0.66      0.73        50
+                 Saint_Bernard       0.94      0.92      0.93        50
+                    Eskimo_dog       0.44      0.44      0.44        50
+                      malamute       0.67      0.78      0.72        50
+                Siberian_husky       0.57      0.62      0.60        50
+                     dalmatian       0.87      0.96      0.91        50
                  affenpinscher       0.92      0.88      0.90        50
-                       basenji       0.85      0.94      0.90        50
-                           pug       0.94      0.96      0.95        50
+                       basenji       0.87      0.92      0.89        50
+                           pug       0.92      0.96      0.94        50
                       Leonberg       0.94      1.00      0.97        50
-                  Newfoundland       0.78      0.84      0.81        50
+                  Newfoundland       0.77      0.82      0.80        50
                 Great_Pyrenees       0.80      0.80      0.80        50
                        Samoyed       0.89      0.98      0.93        50
                     Pomeranian       0.86      0.98      0.92        50
-                          chow       0.96      0.90      0.93        50
+                          chow       0.98      0.90      0.94        50
                       keeshond       0.98      0.92      0.95        50
-             Brabancon_griffon       0.94      0.96      0.95        50
+             Brabancon_griffon       0.94      0.92      0.93        50
                       Pembroke       0.69      0.90      0.78        50
-                      Cardigan       0.88      0.74      0.80        50
-                    toy_poodle       0.53      0.56      0.54        50
-              miniature_poodle       0.68      0.56      0.62        50
-               standard_poodle       0.75      0.88      0.81        50
-              Mexican_hairless       1.00      0.92      0.96        50
-                   timber_wolf       0.75      0.78      0.76        50
+                      Cardigan       0.88      0.72      0.79        50
+                    toy_poodle       0.51      0.56      0.53        50
+              miniature_poodle       0.68      0.54      0.60        50
+               standard_poodle       0.72      0.88      0.79        50
+              Mexican_hairless       1.00      0.94      0.97        50
+                   timber_wolf       0.74      0.78      0.76        50
                     white_wolf       0.85      0.92      0.88        50
-                      red_wolf       0.75      0.60      0.67        50
-                        coyote       0.74      0.68      0.71        50
-                         dingo       0.85      0.80      0.82        50
+                      red_wolf       0.76      0.58      0.66        50
+                        coyote       0.74      0.70      0.72        50
+                         dingo       0.86      0.84      0.85        50
                          dhole       0.90      0.94      0.92        50
            African_hunting_dog       0.93      1.00      0.96        50
-                         hyena       0.96      0.92      0.94        50
-                       red_fox       0.65      0.66      0.65        50
-                       kit_fox       0.70      0.66      0.68        50
-                    Arctic_fox       0.94      0.98      0.96        50
+                         hyena       0.94      0.92      0.93        50
+                       red_fox       0.66      0.66      0.66        50
+                       kit_fox       0.69      0.66      0.67        50
+                    Arctic_fox       0.94      0.96      0.95        50
                       grey_fox       0.76      0.70      0.73        50
-                         tabby       0.48      0.62      0.54        50
-                     tiger_cat       0.43      0.26      0.33        50
+                         tabby       0.46      0.60      0.52        50
+                     tiger_cat       0.44      0.24      0.31        50
                    Persian_cat       0.87      0.94      0.90        50
                    Siamese_cat       0.85      0.92      0.88        50
-                  Egyptian_cat       0.64      0.56      0.60        50
+                  Egyptian_cat       0.63      0.58      0.60        50
                         cougar       0.94      0.94      0.94        50
-                          lynx       0.82      0.74      0.78        50
-                       leopard       0.79      0.84      0.82        50
+                          lynx       0.83      0.76      0.79        50
+                       leopard       0.81      0.84      0.82        50
                   snow_leopard       0.92      0.88      0.90        50
                         jaguar       0.83      0.80      0.82        50
-                          lion       0.91      0.96      0.93        50
+                          lion       0.91      0.98      0.94        50
                          tiger       0.78      0.92      0.84        50
                        cheetah       0.85      0.94      0.90        50
                     brown_bear       0.83      0.96      0.89        50
-           American_black_bear       0.79      0.88      0.83        50
-                      ice_bear       0.94      0.92      0.93        50
-                    sloth_bear       0.95      0.76      0.84        50
+           American_black_bear       0.77      0.88      0.82        50
+                      ice_bear       0.96      0.92      0.94        50
+                    sloth_bear       0.97      0.76      0.85        50
                       mongoose       0.81      0.78      0.80        50
                        meerkat       0.88      0.90      0.89        50
-                  tiger_beetle       0.84      0.94      0.89        50
+                  tiger_beetle       0.85      0.94      0.90        50
                        ladybug       0.74      0.86      0.80        50
-                 ground_beetle       0.80      0.70      0.74        50
-            long-horned_beetle       0.87      0.82      0.85        50
-                   leaf_beetle       0.70      0.60      0.65        50
+                 ground_beetle       0.81      0.70      0.75        50
+            long-horned_beetle       0.88      0.88      0.88        50
+                   leaf_beetle       0.74      0.62      0.67        50
                    dung_beetle       0.90      0.86      0.88        50
              rhinoceros_beetle       0.90      0.92      0.91        50
-                        weevil       0.88      0.90      0.89        50
+                        weevil       0.88      0.92      0.90        50
                            fly       0.79      0.92      0.85        50
                            bee       0.88      0.76      0.82        50
-                           ant       0.78      0.78      0.78        50
-                   grasshopper       0.66      0.66      0.66        50
+                           ant       0.75      0.78      0.76        50
+                   grasshopper       0.69      0.70      0.69        50
                        cricket       0.67      0.68      0.67        50
-                 walking_stick       0.80      0.82      0.81        50
-                     cockroach       0.80      0.82      0.81        50
+                 walking_stick       0.79      0.84      0.82        50
+                     cockroach       0.79      0.82      0.80        50
                         mantis       0.83      0.80      0.82        50
                         cicada       0.88      0.92      0.90        50
-                    leafhopper       0.91      0.84      0.88        50
-                      lacewing       0.90      0.86      0.88        50
+                    leafhopper       0.93      0.84      0.88        50
+                      lacewing       0.89      0.84      0.87        50
                      dragonfly       0.88      0.90      0.89        50
                      damselfly       0.90      0.90      0.90        50
                        admiral       0.96      0.96      0.96        50
@@ -327,667 +327,667 @@ American_Staffordshire_terrier       0.64      0.72      0.68        50
              cabbage_butterfly       0.94      0.96      0.95        50
              sulphur_butterfly       0.92      0.96      0.94        50
                       lycaenid       1.00      0.98      0.99        50
-                      starfish       0.87      0.90      0.88        50
-                    sea_urchin       0.94      0.88      0.91        50
-                  sea_cucumber       0.79      0.76      0.78        50
-                   wood_rabbit       0.84      0.76      0.80        50
-                          hare       0.82      0.92      0.87        50
+                      starfish       0.88      0.90      0.89        50
+                    sea_urchin       0.93      0.82      0.87        50
+                  sea_cucumber       0.78      0.76      0.77        50
+                   wood_rabbit       0.83      0.76      0.79        50
+                          hare       0.82      0.90      0.86        50
                         Angora       0.91      1.00      0.95        50
-                       hamster       0.91      1.00      0.95        50
-                     porcupine       0.92      0.92      0.92        50
-                  fox_squirrel       0.89      0.84      0.87        50
+                       hamster       0.89      1.00      0.94        50
+                     porcupine       0.94      0.92      0.93        50
+                  fox_squirrel       0.89      0.82      0.85        50
                         marmot       0.82      0.94      0.88        50
-                        beaver       0.95      0.82      0.88        50
+                        beaver       0.93      0.82      0.87        50
                     guinea_pig       0.96      0.86      0.91        50
                         sorrel       0.98      0.96      0.97        50
                          zebra       0.98      0.94      0.96        50
-                           hog       0.82      0.64      0.72        50
-                     wild_boar       0.76      0.90      0.83        50
-                       warthog       0.85      0.92      0.88        50
-                  hippopotamus       0.92      0.96      0.94        50
-                            ox       0.75      0.66      0.70        50
-                 water_buffalo       0.87      0.90      0.88        50
+                           hog       0.79      0.62      0.70        50
+                     wild_boar       0.75      0.90      0.82        50
+                       warthog       0.87      0.94      0.90        50
+                  hippopotamus       0.92      0.98      0.95        50
+                            ox       0.76      0.64      0.70        50
+                 water_buffalo       0.85      0.90      0.87        50
                          bison       0.94      0.92      0.93        50
-                           ram       0.69      0.66      0.67        50
-                       bighorn       0.68      0.68      0.68        50
-                          ibex       0.90      0.94      0.92        50
+                           ram       0.67      0.68      0.67        50
+                       bighorn       0.68      0.64      0.66        50
+                          ibex       0.89      0.94      0.91        50
                     hartebeest       0.98      0.94      0.96        50
                         impala       0.74      0.78      0.76        50
                        gazelle       0.73      0.72      0.73        50
                  Arabian_camel       0.96      0.96      0.96        50
                          llama       0.92      0.88      0.90        50
                         weasel       0.67      0.44      0.53        50
-                          mink       0.69      0.86      0.77        50
+                          mink       0.70      0.86      0.77        50
                        polecat       0.51      0.48      0.49        50
            black-footed_ferret       0.65      0.70      0.67        50
                          otter       0.76      0.78      0.77        50
                          skunk       0.92      0.92      0.92        50
-                        badger       0.85      0.92      0.88        50
-                     armadillo       0.92      0.88      0.90        50
-              three-toed_sloth       0.92      0.98      0.95        50
+                        badger       0.84      0.92      0.88        50
+                     armadillo       0.94      0.88      0.91        50
+              three-toed_sloth       0.89      0.98      0.93        50
                      orangutan       0.90      0.86      0.88        50
-                       gorilla       0.93      0.84      0.88        50
+                       gorilla       0.91      0.84      0.88        50
                     chimpanzee       0.80      0.88      0.84        50
-                        gibbon       0.77      0.74      0.76        50
-                       siamang       0.81      0.76      0.78        50
+                        gibbon       0.76      0.74      0.75        50
+                       siamang       0.79      0.76      0.78        50
                         guenon       0.86      0.86      0.86        50
                          patas       0.83      0.68      0.75        50
                         baboon       0.88      0.92      0.90        50
-                       macaque       0.75      0.82      0.78        50
+                       macaque       0.76      0.82      0.79        50
                         langur       0.84      0.72      0.77        50
-                       colobus       0.93      0.86      0.90        50
+                       colobus       0.94      0.88      0.91        50
               proboscis_monkey       0.96      1.00      0.98        50
-                      marmoset       0.85      0.70      0.77        50
+                      marmoset       0.86      0.72      0.78        50
                       capuchin       0.72      0.82      0.77        50
-                 howler_monkey       0.79      0.90      0.84        50
-                          titi       0.53      0.60      0.56        50
+                 howler_monkey       0.79      0.88      0.83        50
+                          titi       0.54      0.60      0.57        50
                  spider_monkey       0.79      0.52      0.63        50
                squirrel_monkey       0.59      0.74      0.65        50
-                Madagascar_cat       0.92      0.68      0.78        50
-                         indri       0.70      0.92      0.79        50
-               Indian_elephant       0.70      0.70      0.70        50
-              African_elephant       0.72      0.62      0.67        50
-                  lesser_panda       0.94      0.94      0.94        50
-                   giant_panda       0.94      0.96      0.95        50
-                    barracouta       0.93      0.84      0.88        50
-                           eel       0.80      0.64      0.71        50
+                Madagascar_cat       0.92      0.70      0.80        50
+                         indri       0.70      0.90      0.79        50
+               Indian_elephant       0.67      0.70      0.69        50
+              African_elephant       0.73      0.64      0.68        50
+                  lesser_panda       0.96      0.94      0.95        50
+                   giant_panda       0.96      0.96      0.96        50
+                    barracouta       0.95      0.84      0.89        50
+                           eel       0.80      0.66      0.73        50
                           coho       0.82      0.92      0.87        50
-                   rock_beauty       0.96      0.94      0.95        50
+                   rock_beauty       0.96      0.92      0.94        50
                   anemone_fish       0.88      0.88      0.88        50
-                      sturgeon       0.88      0.84      0.86        50
+                      sturgeon       0.89      0.84      0.87        50
                            gar       0.82      0.74      0.78        50
                       lionfish       0.92      0.96      0.94        50
                         puffer       0.88      0.90      0.89        50
                         abacus       0.87      0.82      0.85        50
-                         abaya       0.77      0.82      0.80        50
-                 academic_gown       0.69      0.50      0.58        50
-                     accordion       0.93      0.84      0.88        50
+                         abaya       0.71      0.84      0.77        50
+                 academic_gown       0.68      0.50      0.57        50
+                     accordion       0.91      0.86      0.89        50
                acoustic_guitar       0.66      0.62      0.64        50
               aircraft_carrier       0.82      0.80      0.81        50
                       airliner       0.80      0.94      0.86        50
-                       airship       0.90      0.76      0.83        50
-                         altar       0.50      0.68      0.58        50
-                     ambulance       0.77      0.92      0.84        50
-                     amphibian       0.78      0.72      0.75        50
-                  analog_clock       0.66      0.66      0.66        50
-                        apiary       0.82      0.90      0.86        50
-                         apron       0.70      0.70      0.70        50
-                        ashcan       0.66      0.58      0.62        50
-                 assault_rifle       0.65      0.56      0.60        50
+                       airship       0.90      0.74      0.81        50
+                         altar       0.51      0.70      0.59        50
+                     ambulance       0.78      0.90      0.83        50
+                     amphibian       0.78      0.70      0.74        50
+                  analog_clock       0.68      0.64      0.66        50
+                        apiary       0.79      0.90      0.84        50
+                         apron       0.71      0.70      0.71        50
+                        ashcan       0.64      0.56      0.60        50
+                 assault_rifle       0.67      0.56      0.61        50
                       backpack       0.58      0.44      0.50        50
-                        bakery       0.40      0.42      0.41        50
-                  balance_beam       0.74      0.86      0.80        50
-                       balloon       0.90      0.92      0.91        50
-                     ballpoint       0.67      0.58      0.62        50
+                        bakery       0.36      0.42      0.39        50
+                  balance_beam       0.73      0.86      0.79        50
+                       balloon       0.92      0.92      0.92        50
+                     ballpoint       0.71      0.60      0.65        50
                       Band_Aid       0.75      0.86      0.80        50
-                         banjo       0.85      0.92      0.88        50
-                     bannister       0.67      0.84      0.74        50
-                       barbell       0.68      0.64      0.66        50
-                  barber_chair       0.78      0.76      0.77        50
-                    barbershop       0.53      0.58      0.55        50
+                         banjo       0.87      0.90      0.88        50
+                     bannister       0.65      0.86      0.74        50
+                       barbell       0.70      0.66      0.68        50
+                  barber_chair       0.77      0.74      0.76        50
+                    barbershop       0.51      0.60      0.55        50
                           barn       0.87      0.94      0.90        50
-                     barometer       0.96      0.86      0.91        50
+                     barometer       0.98      0.86      0.91        50
                         barrel       0.65      0.60      0.62        50
-                        barrow       0.76      0.76      0.76        50
+                        barrow       0.75      0.76      0.75        50
                       baseball       0.90      0.74      0.81        50
-                    basketball       0.96      0.96      0.96        50
+                    basketball       0.98      0.96      0.97        50
                       bassinet       0.67      0.80      0.73        50
-                       bassoon       0.81      0.92      0.86        50
-                   bathing_cap       0.68      0.76      0.72        50
-                    bath_towel       0.77      0.66      0.71        50
-                       bathtub       0.46      0.48      0.47        50
-                   beach_wagon       0.63      0.72      0.67        50
-                        beacon       0.80      0.74      0.77        50
+                       bassoon       0.83      0.90      0.87        50
+                   bathing_cap       0.68      0.72      0.70        50
+                    bath_towel       0.75      0.66      0.70        50
+                       bathtub       0.44      0.46      0.45        50
+                   beach_wagon       0.65      0.70      0.67        50
+                        beacon       0.79      0.74      0.76        50
                         beaker       0.91      0.58      0.71        50
-                      bearskin       0.80      0.90      0.85        50
-                   beer_bottle       0.68      0.72      0.70        50
+                      bearskin       0.82      0.90      0.86        50
+                   beer_bottle       0.67      0.72      0.69        50
                     beer_glass       0.72      0.82      0.77        50
-                     bell_cote       0.72      0.72      0.72        50
-                           bib       0.76      0.64      0.70        50
-         bicycle-built-for-two       0.80      0.88      0.84        50
-                        bikini       0.58      0.64      0.61        50
-                        binder       0.80      0.72      0.76        50
-                    binoculars       0.76      0.64      0.70        50
-                     birdhouse       0.78      0.86      0.82        50
-                     boathouse       0.77      0.88      0.82        50
-                       bobsled       0.90      0.92      0.91        50
-                      bolo_tie       0.89      0.82      0.85        50
-                        bonnet       0.76      0.70      0.73        50
-                      bookcase       0.64      0.72      0.68        50
-                      bookshop       0.54      0.58      0.56        50
-                     bottlecap       0.73      0.74      0.73        50
-                           bow       0.77      0.80      0.78        50
-                       bow_tie       0.73      0.82      0.77        50
+                     bell_cote       0.73      0.76      0.75        50
+                           bib       0.78      0.64      0.70        50
+         bicycle-built-for-two       0.80      0.86      0.83        50
+                        bikini       0.57      0.64      0.60        50
+                        binder       0.82      0.72      0.77        50
+                    binoculars       0.74      0.64      0.69        50
+                     birdhouse       0.76      0.88      0.81        50
+                     boathouse       0.79      0.88      0.83        50
+                       bobsled       0.94      0.92      0.93        50
+                      bolo_tie       0.91      0.82      0.86        50
+                        bonnet       0.71      0.68      0.69        50
+                      bookcase       0.63      0.68      0.65        50
+                      bookshop       0.53      0.58      0.55        50
+                     bottlecap       0.72      0.72      0.72        50
+                           bow       0.75      0.80      0.78        50
+                       bow_tie       0.76      0.82      0.79        50
                          brass       0.85      0.94      0.90        50
-                     brassiere       0.78      0.70      0.74        50
-                    breakwater       0.58      0.62      0.60        50
-                   breastplate       0.50      0.40      0.44        50
+                     brassiere       0.80      0.72      0.76        50
+                    breakwater       0.59      0.60      0.59        50
+                   breastplate       0.49      0.40      0.44        50
                          broom       0.77      0.68      0.72        50
-                        bucket       0.54      0.62      0.58        50
-                        buckle       0.63      0.54      0.58        50
-              bulletproof_vest       0.86      0.62      0.72        50
-                  bullet_train       0.96      0.98      0.97        50
-                  butcher_shop       0.75      0.78      0.76        50
-                           cab       0.71      0.68      0.69        50
-                       caldron       0.63      0.54      0.58        50
-                        candle       0.69      0.68      0.69        50
-                        cannon       0.82      0.92      0.87        50
+                        bucket       0.55      0.60      0.57        50
+                        buckle       0.61      0.56      0.58        50
+              bulletproof_vest       0.84      0.62      0.71        50
+                  bullet_train       0.94      0.98      0.96        50
+                  butcher_shop       0.76      0.76      0.76        50
+                           cab       0.71      0.70      0.71        50
+                       caldron       0.64      0.56      0.60        50
+                        candle       0.70      0.70      0.70        50
+                        cannon       0.79      0.92      0.85        50
                          canoe       0.78      0.94      0.85        50
-                    can_opener       0.73      0.74      0.73        50
-                      cardigan       0.53      0.70      0.60        50
-                    car_mirror       0.89      0.94      0.91        50
+                    can_opener       0.71      0.74      0.73        50
+                      cardigan       0.52      0.68      0.59        50
+                    car_mirror       0.90      0.94      0.92        50
                       carousel       0.87      0.92      0.89        50
-               carpenter's_kit       0.55      0.68      0.61        50
-                        carton       0.62      0.58      0.60        50
+               carpenter's_kit       0.56      0.68      0.61        50
+                        carton       0.64      0.58      0.61        50
                      car_wheel       0.71      0.44      0.54        50
-                  cash_machine       0.80      0.82      0.81        50
-                      cassette       0.77      0.66      0.71        50
-               cassette_player       0.41      0.26      0.32        50
-                        castle       0.75      0.78      0.76        50
+                  cash_machine       0.77      0.82      0.80        50
+                      cassette       0.79      0.68      0.73        50
+               cassette_player       0.40      0.24      0.30        50
+                        castle       0.72      0.78      0.75        50
                      catamaran       0.78      0.76      0.77        50
-                     CD_player       0.47      0.56      0.51        50
-                         cello       0.81      0.84      0.82        50
-            cellular_telephone       0.62      0.74      0.67        50
-                         chain       0.52      0.46      0.49        50
-               chainlink_fence       0.67      0.76      0.71        50
+                     CD_player       0.46      0.56      0.50        50
+                         cello       0.80      0.86      0.83        50
+            cellular_telephone       0.60      0.74      0.66        50
+                         chain       0.55      0.46      0.50        50
+               chainlink_fence       0.66      0.76      0.70        50
                     chain_mail       0.88      0.74      0.80        50
-                     chain_saw       0.87      0.94      0.90        50
-                         chest       0.73      0.72      0.73        50
+                     chain_saw       0.85      0.92      0.88        50
+                         chest       0.70      0.74      0.72        50
                     chiffonier       0.82      0.28      0.42        50
-                         chime       0.74      0.70      0.72        50
-                 china_cabinet       0.73      0.82      0.77        50
-            Christmas_stocking       0.75      0.94      0.83        50
-                        church       0.56      0.70      0.62        50
+                         chime       0.76      0.68      0.72        50
+                 china_cabinet       0.75      0.82      0.78        50
+            Christmas_stocking       0.72      0.94      0.82        50
+                        church       0.56      0.68      0.61        50
                         cinema       0.78      0.70      0.74        50
-                       cleaver       0.59      0.46      0.52        50
+                       cleaver       0.62      0.48      0.54        50
                 cliff_dwelling       0.94      0.92      0.93        50
                          cloak       0.56      0.36      0.44        50
-                          clog       0.76      0.68      0.72        50
-               cocktail_shaker       0.77      0.66      0.71        50
-                    coffee_mug       0.43      0.46      0.45        50
-                     coffeepot       0.57      0.54      0.56        50
-                          coil       0.78      0.76      0.77        50
-              combination_lock       0.88      0.74      0.80        50
+                          clog       0.79      0.68      0.73        50
+               cocktail_shaker       0.79      0.66      0.72        50
+                    coffee_mug       0.43      0.44      0.44        50
+                     coffeepot       0.56      0.54      0.55        50
+                          coil       0.79      0.74      0.76        50
+              combination_lock       0.84      0.74      0.79        50
              computer_keyboard       0.54      0.72      0.62        50
-                 confectionery       0.61      0.56      0.58        50
+                 confectionery       0.60      0.56      0.58        50
                 container_ship       0.86      0.88      0.87        50
-                   convertible       0.69      0.84      0.76        50
-                     corkscrew       0.84      0.96      0.90        50
-                        cornet       0.64      0.68      0.66        50
-                   cowboy_boot       0.79      0.76      0.78        50
-                    cowboy_hat       0.71      0.74      0.73        50
-                        cradle       0.69      0.50      0.58        50
-                         crane       0.83      0.80      0.82        50
-                  crash_helmet       0.69      0.94      0.80        50
-                         crate       0.71      0.54      0.61        50
-                          crib       0.83      0.70      0.76        50
-                     Crock_Pot       0.91      0.82      0.86        50
-                  croquet_ball       0.80      0.88      0.84        50
-                        crutch       0.65      0.64      0.65        50
-                       cuirass       0.56      0.54      0.55        50
-                           dam       0.78      0.78      0.78        50
+                   convertible       0.68      0.84      0.75        50
+                     corkscrew       0.82      0.98      0.89        50
+                        cornet       0.66      0.70      0.68        50
+                   cowboy_boot       0.82      0.72      0.77        50
+                    cowboy_hat       0.73      0.76      0.75        50
+                        cradle       0.70      0.52      0.60        50
+                         crane       0.84      0.82      0.83        50
+                  crash_helmet       0.74      0.96      0.83        50
+                         crate       0.70      0.52      0.60        50
+                          crib       0.81      0.70      0.75        50
+                     Crock_Pot       0.93      0.82      0.87        50
+                  croquet_ball       0.81      0.88      0.85        50
+                        crutch       0.62      0.68      0.65        50
+                       cuirass       0.55      0.52      0.54        50
+                           dam       0.74      0.78      0.76        50
                           desk       0.45      0.52      0.48        50
-              desktop_computer       0.37      0.58      0.45        50
-                dial_telephone       0.86      0.96      0.91        50
-                        diaper       0.70      0.76      0.73        50
-                 digital_clock       0.68      0.64      0.66        50
-                 digital_watch       0.71      0.68      0.69        50
-                  dining_table       0.75      0.78      0.76        50
-                       dishrag       0.92      0.92      0.92        50
-                    dishwasher       0.71      0.58      0.64        50
+              desktop_computer       0.38      0.60      0.47        50
+                dial_telephone       0.87      0.96      0.91        50
+                        diaper       0.74      0.78      0.76        50
+                 digital_clock       0.66      0.66      0.66        50
+                 digital_watch       0.69      0.62      0.65        50
+                  dining_table       0.72      0.78      0.75        50
+                       dishrag       0.92      0.90      0.91        50
+                    dishwasher       0.69      0.58      0.63        50
                     disk_brake       0.89      0.96      0.92        50
-                          dock       0.61      0.56      0.58        50
+                          dock       0.60      0.56      0.58        50
                        dogsled       0.90      0.88      0.89        50
                           dome       0.71      0.80      0.75        50
-                       doormat       0.66      0.62      0.64        50
+                       doormat       0.67      0.62      0.65        50
              drilling_platform       0.92      0.90      0.91        50
-                          drum       0.57      0.58      0.57        50
+                          drum       0.60      0.58      0.59        50
                      drumstick       0.52      0.60      0.56        50
-                      dumbbell       0.56      0.68      0.61        50
-                    Dutch_oven       0.67      0.80      0.73        50
-                  electric_fan       0.79      0.84      0.82        50
+                      dumbbell       0.58      0.68      0.62        50
+                    Dutch_oven       0.68      0.80      0.73        50
+                  electric_fan       0.81      0.84      0.82        50
                electric_guitar       0.78      0.78      0.78        50
-           electric_locomotive       0.88      0.90      0.89        50
+           electric_locomotive       0.90      0.90      0.90        50
           entertainment_center       0.81      0.94      0.87        50
-                      envelope       0.62      0.58      0.60        50
-                espresso_maker       0.73      0.82      0.77        50
-                   face_powder       0.74      0.84      0.79        50
-                   feather_boa       0.85      0.88      0.86        50
-                          file       0.80      0.82      0.81        50
+                      envelope       0.60      0.58      0.59        50
+                espresso_maker       0.74      0.84      0.79        50
+                   face_powder       0.75      0.82      0.78        50
+                   feather_boa       0.83      0.88      0.85        50
+                          file       0.79      0.82      0.80        50
                       fireboat       0.92      0.98      0.95        50
                    fire_engine       0.94      0.88      0.91        50
                    fire_screen       0.82      0.54      0.65        50
-                      flagpole       0.88      0.76      0.82        50
-                         flute       0.44      0.42      0.43        50
-                 folding_chair       0.80      0.72      0.76        50
+                      flagpole       0.86      0.76      0.81        50
+                         flute       0.47      0.42      0.44        50
+                 folding_chair       0.80      0.74      0.77        50
                football_helmet       0.79      0.92      0.85        50
-                      forklift       0.88      0.92      0.90        50
-                      fountain       0.75      0.88      0.81        50
-                  fountain_pen       0.78      0.84      0.81        50
-                   four-poster       0.91      0.84      0.88        50
+                      forklift       0.87      0.92      0.89        50
+                      fountain       0.71      0.88      0.79        50
+                  fountain_pen       0.79      0.84      0.82        50
+                   four-poster       0.89      0.82      0.85        50
                    freight_car       0.94      1.00      0.97        50
-                   French_horn       0.93      0.86      0.90        50
-                    frying_pan       0.68      0.56      0.62        50
-                      fur_coat       0.86      0.88      0.87        50
+                   French_horn       0.96      0.86      0.91        50
+                    frying_pan       0.64      0.54      0.59        50
+                      fur_coat       0.82      0.90      0.86        50
                  garbage_truck       0.87      0.92      0.89        50
-                       gasmask       0.69      0.84      0.76        50
-                      gas_pump       0.89      0.82      0.85        50
-                        goblet       0.69      0.72      0.71        50
+                       gasmask       0.70      0.84      0.76        50
+                      gas_pump       0.87      0.78      0.82        50
+                        goblet       0.71      0.72      0.71        50
                        go-kart       0.92      0.92      0.92        50
-                     golf_ball       0.88      0.86      0.87        50
+                     golf_ball       0.90      0.86      0.88        50
                       golfcart       0.84      0.82      0.83        50
                        gondola       0.93      1.00      0.96        50
-                          gong       0.88      0.72      0.79        50
-                          gown       0.69      0.68      0.69        50
-                   grand_piano       0.76      0.68      0.72        50
-                    greenhouse       0.81      0.78      0.80        50
+                          gong       0.86      0.72      0.78        50
+                          gown       0.71      0.68      0.69        50
+                   grand_piano       0.74      0.68      0.71        50
+                    greenhouse       0.80      0.78      0.79        50
                         grille       0.71      0.80      0.75        50
-                 grocery_store       0.53      0.64      0.58        50
-                    guillotine       0.87      0.90      0.88        50
-                    hair_slide       0.50      0.48      0.49        50
-                    hair_spray       0.63      0.58      0.60        50
+                 grocery_store       0.52      0.64      0.58        50
+                    guillotine       0.86      0.88      0.87        50
+                    hair_slide       0.51      0.50      0.51        50
+                    hair_spray       0.65      0.56      0.60        50
                     half_track       0.77      0.80      0.78        50
-                        hammer       0.71      0.60      0.65        50
+                        hammer       0.72      0.62      0.67        50
                         hamper       0.73      0.66      0.69        50
-                   hand_blower       0.75      0.72      0.73        50
-            hand-held_computer       0.78      0.58      0.67        50
+                   hand_blower       0.73      0.72      0.73        50
+            hand-held_computer       0.81      0.58      0.67        50
                   handkerchief       0.73      0.82      0.77        50
-                     hard_disc       0.80      0.80      0.80        50
-                     harmonica       0.81      0.78      0.80        50
-                          harp       0.98      0.96      0.97        50
+                     hard_disc       0.82      0.80      0.81        50
+                     harmonica       0.83      0.80      0.82        50
+                          harp       0.96      0.96      0.96        50
                      harvester       0.77      0.86      0.81        50
                        hatchet       0.77      0.66      0.71        50
-                       holster       0.75      0.76      0.75        50
-                  home_theater       0.74      0.64      0.69        50
-                     honeycomb       0.71      0.72      0.71        50
-                          hook       0.50      0.40      0.44        50
-                     hoopskirt       0.79      0.68      0.73        50
-                horizontal_bar       0.67      0.70      0.69        50
+                       holster       0.75      0.78      0.76        50
+                  home_theater       0.79      0.62      0.70        50
+                     honeycomb       0.72      0.72      0.72        50
+                          hook       0.56      0.40      0.47        50
+                     hoopskirt       0.77      0.68      0.72        50
+                horizontal_bar       0.67      0.66      0.67        50
                     horse_cart       0.81      0.92      0.86        50
                      hourglass       0.96      0.98      0.97        50
                           iPod       0.80      0.86      0.83        50
-                          iron       0.92      0.90      0.91        50
+                          iron       0.88      0.92      0.90        50
                jack-o'-lantern       0.94      0.98      0.96        50
-                          jean       0.74      0.74      0.74        50
-                          jeep       0.85      0.80      0.82        50
-                        jersey       0.79      0.84      0.82        50
-                 jigsaw_puzzle       0.83      0.90      0.87        50
-                    jinrikisha       0.87      0.90      0.88        50
+                          jean       0.76      0.74      0.75        50
+                          jeep       0.85      0.82      0.84        50
+                        jersey       0.77      0.82      0.80        50
+                 jigsaw_puzzle       0.85      0.90      0.87        50
+                    jinrikisha       0.88      0.90      0.89        50
                       joystick       0.71      0.82      0.76        50
-                        kimono       0.73      0.94      0.82        50
+                        kimono       0.75      0.94      0.83        50
                       knee_pad       0.84      0.84      0.84        50
-                          knot       0.77      0.86      0.81        50
-                      lab_coat       0.73      0.88      0.80        50
-                         ladle       0.48      0.40      0.43        50
-                     lampshade       0.47      0.52      0.50        50
-                        laptop       0.30      0.26      0.28        50
-                    lawn_mower       0.80      0.88      0.84        50
-                      lens_cap       0.91      0.60      0.72        50
-                 letter_opener       0.62      0.30      0.41        50
-                       library       0.65      0.62      0.63        50
+                          knot       0.77      0.82      0.80        50
+                      lab_coat       0.70      0.88      0.78        50
+                         ladle       0.51      0.44      0.47        50
+                     lampshade       0.48      0.54      0.51        50
+                        laptop       0.29      0.26      0.27        50
+                    lawn_mower       0.80      0.90      0.85        50
+                      lens_cap       0.91      0.58      0.71        50
+                 letter_opener       0.64      0.32      0.43        50
+                       library       0.65      0.60      0.62        50
                       lifeboat       0.94      0.94      0.94        50
                        lighter       0.78      0.72      0.75        50
-                     limousine       0.81      0.76      0.78        50
+                     limousine       0.79      0.76      0.78        50
                          liner       0.85      0.92      0.88        50
-                      lipstick       0.88      0.84      0.86        50
+                      lipstick       0.87      0.80      0.83        50
                         Loafer       0.77      0.88      0.82        50
-                        lotion       0.54      0.62      0.58        50
-                   loudspeaker       0.61      0.60      0.61        50
-                         loupe       0.92      0.46      0.61        50
+                        lotion       0.52      0.64      0.57        50
+                   loudspeaker       0.57      0.58      0.57        50
+                         loupe       0.88      0.46      0.61        50
                     lumbermill       0.70      0.74      0.72        50
               magnetic_compass       0.83      0.68      0.75        50
-                       mailbag       0.56      0.64      0.60        50
-                       mailbox       0.81      0.84      0.82        50
+                       mailbag       0.56      0.66      0.61        50
+                       mailbox       0.84      0.84      0.84        50
                        maillot       0.26      0.20      0.23        50
                        maillot       0.37      0.42      0.39        50
                  manhole_cover       0.90      0.94      0.92        50
                         maraca       0.74      0.74      0.74        50
-                       marimba       0.80      0.88      0.84        50
-                          mask       0.65      0.66      0.65        50
+                       marimba       0.83      0.88      0.85        50
+                          mask       0.65      0.68      0.67        50
                     matchstick       0.84      0.74      0.79        50
-                       maypole       0.84      0.98      0.91        50
-                          maze       0.88      0.90      0.89        50
-                 measuring_cup       0.76      0.68      0.72        50
-                medicine_chest       0.69      0.68      0.69        50
-                      megalith       0.89      0.84      0.87        50
-                    microphone       0.67      0.60      0.63        50
+                       maypole       0.86      0.98      0.92        50
+                          maze       0.87      0.90      0.88        50
+                 measuring_cup       0.76      0.70      0.73        50
+                medicine_chest       0.68      0.68      0.68        50
+                      megalith       0.88      0.84      0.86        50
+                    microphone       0.65      0.62      0.63        50
                      microwave       0.71      0.58      0.64        50
-              military_uniform       0.46      0.64      0.54        50
-                      milk_can       0.80      0.72      0.76        50
-                       minibus       0.63      0.86      0.73        50
-                     miniskirt       0.51      0.70      0.59        50
-                       minivan       0.62      0.46      0.53        50
-                       missile       0.50      0.58      0.54        50
+              military_uniform       0.47      0.62      0.53        50
+                      milk_can       0.80      0.70      0.74        50
+                       minibus       0.64      0.84      0.72        50
+                     miniskirt       0.52      0.68      0.59        50
+                       minivan       0.62      0.48      0.54        50
+                       missile       0.47      0.54      0.50        50
                         mitten       0.84      0.74      0.79        50
-                   mixing_bowl       0.73      0.86      0.79        50
-                   mobile_home       0.87      0.68      0.76        50
+                   mixing_bowl       0.74      0.86      0.80        50
+                   mobile_home       0.89      0.66      0.76        50
                        Model_T       0.82      0.92      0.87        50
-                         modem       0.77      0.68      0.72        50
-                     monastery       0.64      0.58      0.61        50
-                       monitor       0.32      0.34      0.33        50
-                         moped       0.84      0.74      0.79        50
+                         modem       0.76      0.70      0.73        50
+                     monastery       0.67      0.58      0.62        50
+                       monitor       0.32      0.32      0.32        50
+                         moped       0.83      0.78      0.80        50
                         mortar       0.86      0.84      0.85        50
-                   mortarboard       0.58      0.66      0.62        50
-                        mosque       0.87      0.94      0.90        50
+                   mortarboard       0.60      0.68      0.64        50
+                        mosque       0.85      0.94      0.90        50
                   mosquito_net       0.84      0.96      0.90        50
-                 motor_scooter       0.88      0.84      0.86        50
-                 mountain_bike       0.80      0.86      0.83        50
-                 mountain_tent       0.89      0.96      0.92        50
-                         mouse       0.51      0.36      0.42        50
-                     mousetrap       0.77      0.88      0.82        50
+                 motor_scooter       0.87      0.82      0.85        50
+                 mountain_bike       0.83      0.88      0.85        50
+                 mountain_tent       0.87      0.96      0.91        50
+                         mouse       0.49      0.36      0.41        50
+                     mousetrap       0.75      0.86      0.80        50
                     moving_van       0.90      0.52      0.66        50
                         muzzle       0.95      0.74      0.83        50
-                          nail       0.79      0.60      0.68        50
-                    neck_brace       0.88      0.70      0.78        50
+                          nail       0.75      0.60      0.67        50
+                    neck_brace       0.90      0.70      0.79        50
                       necklace       0.51      0.96      0.67        50
-                        nipple       0.83      0.88      0.85        50
-                      notebook       0.31      0.36      0.33        50
-                       obelisk       0.87      0.82      0.85        50
-                          oboe       0.70      0.66      0.68        50
-                       ocarina       0.81      0.86      0.83        50
+                        nipple       0.83      0.90      0.87        50
+                      notebook       0.27      0.32      0.29        50
+                       obelisk       0.85      0.82      0.84        50
+                          oboe       0.69      0.66      0.67        50
+                       ocarina       0.78      0.84      0.81        50
                       odometer       0.92      0.96      0.94        50
-                    oil_filter       0.79      0.68      0.73        50
+                    oil_filter       0.82      0.66      0.73        50
                          organ       0.83      0.86      0.84        50
                   oscilloscope       0.91      0.96      0.93        50
-                     overskirt       0.61      0.38      0.47        50
-                        oxcart       0.77      0.86      0.81        50
-                   oxygen_mask       0.83      0.58      0.68        50
-                        packet       0.48      0.56      0.52        50
+                     overskirt       0.58      0.38      0.46        50
+                        oxcart       0.74      0.86      0.80        50
+                   oxygen_mask       0.81      0.60      0.69        50
+                        packet       0.53      0.56      0.54        50
                         paddle       0.84      0.72      0.77        50
-                   paddlewheel       0.90      0.92      0.91        50
-                       padlock       0.78      0.76      0.77        50
-                    paintbrush       0.74      0.78      0.76        50
-                        pajama       0.69      0.70      0.69        50
-                        palace       0.64      0.76      0.70        50
-                       panpipe       0.84      0.84      0.84        50
-                   paper_towel       0.81      0.76      0.78        50
-                     parachute       0.92      0.98      0.95        50
-                 parallel_bars       0.80      0.70      0.74        50
-                    park_bench       0.75      0.78      0.76        50
-                 parking_meter       0.83      0.90      0.87        50
+                   paddlewheel       0.92      0.92      0.92        50
+                       padlock       0.78      0.78      0.78        50
+                    paintbrush       0.75      0.78      0.76        50
+                        pajama       0.70      0.70      0.70        50
+                        palace       0.64      0.74      0.69        50
+                       panpipe       0.88      0.84      0.86        50
+                   paper_towel       0.80      0.72      0.76        50
+                     parachute       0.91      0.98      0.94        50
+                 parallel_bars       0.78      0.70      0.74        50
+                    park_bench       0.74      0.78      0.76        50
+                 parking_meter       0.82      0.90      0.86        50
                  passenger_car       0.74      0.56      0.64        50
-                         patio       0.78      0.62      0.69        50
-                     pay-phone       0.87      0.80      0.83        50
-                      pedestal       0.65      0.68      0.67        50
-                    pencil_box       0.59      0.74      0.65        50
-              pencil_sharpener       0.76      0.64      0.70        50
-                       perfume       0.60      0.66      0.63        50
+                         patio       0.79      0.62      0.70        50
+                     pay-phone       0.85      0.82      0.84        50
+                      pedestal       0.64      0.68      0.66        50
+                    pencil_box       0.56      0.74      0.64        50
+              pencil_sharpener       0.77      0.66      0.71        50
+                       perfume       0.60      0.68      0.64        50
                     Petri_dish       0.85      0.70      0.77        50
-                   photocopier       0.80      0.94      0.86        50
-                          pick       0.84      0.74      0.79        50
-                   pickelhaube       0.87      0.78      0.82        50
+                   photocopier       0.81      0.94      0.87        50
+                          pick       0.86      0.72      0.78        50
+                   pickelhaube       0.85      0.78      0.81        50
                   picket_fence       0.80      0.86      0.83        50
                         pickup       0.76      0.70      0.73        50
-                          pier       0.52      0.58      0.55        50
-                    piggy_bank       0.81      0.88      0.85        50
+                          pier       0.56      0.58      0.57        50
+                    piggy_bank       0.83      0.88      0.85        50
                    pill_bottle       0.83      0.76      0.79        50
-                        pillow       0.67      0.80      0.73        50
+                        pillow       0.68      0.80      0.73        50
                 ping-pong_ball       0.84      0.86      0.85        50
-                      pinwheel       0.85      0.92      0.88        50
-                        pirate       0.85      0.78      0.81        50
-                       pitcher       0.50      0.62      0.55        50
-                         plane       0.93      0.86      0.90        50
+                      pinwheel       0.80      0.90      0.85        50
+                        pirate       0.86      0.74      0.80        50
+                       pitcher       0.52      0.64      0.57        50
+                         plane       0.90      0.86      0.88        50
                    planetarium       0.94      0.94      0.94        50
-                   plastic_bag       0.57      0.46      0.51        50
-                    plate_rack       0.84      0.62      0.71        50
-                          plow       0.81      0.76      0.78        50
-                       plunger       0.70      0.64      0.67        50
+                   plastic_bag       0.59      0.44      0.51        50
+                    plate_rack       0.86      0.60      0.71        50
+                          plow       0.84      0.76      0.80        50
+                       plunger       0.67      0.64      0.65        50
                Polaroid_camera       0.79      0.84      0.82        50
-                          pole       0.57      0.48      0.52        50
-                    police_van       0.74      0.86      0.80        50
-                        poncho       0.70      0.76      0.73        50
+                          pole       0.57      0.46      0.51        50
+                    police_van       0.72      0.86      0.78        50
+                        poncho       0.72      0.76      0.74        50
                     pool_table       0.92      0.88      0.90        50
                     pop_bottle       0.68      0.68      0.68        50
-                           pot       0.60      0.82      0.69        50
-                potter's_wheel       0.87      0.94      0.90        50
-                   power_drill       0.69      0.62      0.65        50
-                    prayer_rug       0.84      0.74      0.79        50
-                       printer       0.71      0.54      0.61        50
+                           pot       0.61      0.80      0.69        50
+                potter's_wheel       0.89      0.94      0.91        50
+                   power_drill       0.70      0.62      0.66        50
+                    prayer_rug       0.86      0.72      0.78        50
+                       printer       0.69      0.54      0.61        50
                         prison       0.67      0.64      0.65        50
-                    projectile       0.50      0.32      0.39        50
-                     projector       0.70      0.66      0.68        50
+                    projectile       0.45      0.30      0.36        50
+                     projector       0.67      0.64      0.65        50
                           puck       0.85      0.90      0.87        50
-                  punching_bag       0.79      0.66      0.72        50
-                         purse       0.52      0.50      0.51        50
-                         quill       0.85      0.82      0.84        50
-                         quilt       0.69      0.66      0.67        50
-                         racer       0.66      0.82      0.73        50
+                  punching_bag       0.80      0.64      0.71        50
+                         purse       0.46      0.50      0.48        50
+                         quill       0.86      0.84      0.85        50
+                         quilt       0.69      0.68      0.69        50
+                         racer       0.66      0.80      0.72        50
                         racket       0.85      0.78      0.81        50
-                      radiator       0.78      0.72      0.75        50
-                         radio       0.56      0.62      0.59        50
+                      radiator       0.76      0.74      0.75        50
+                         radio       0.57      0.62      0.60        50
                radio_telescope       0.94      0.92      0.93        50
-                   rain_barrel       0.72      0.78      0.75        50
-          recreational_vehicle       0.79      0.88      0.83        50
-                          reel       0.79      0.74      0.76        50
-                 reflex_camera       0.65      0.82      0.73        50
+                   rain_barrel       0.71      0.78      0.74        50
+          recreational_vehicle       0.81      0.86      0.83        50
+                          reel       0.77      0.74      0.76        50
+                 reflex_camera       0.66      0.82      0.73        50
                   refrigerator       0.80      0.80      0.80        50
                 remote_control       0.84      0.86      0.85        50
-                    restaurant       0.45      0.50      0.48        50
+                    restaurant       0.45      0.48      0.47        50
                       revolver       0.81      0.92      0.86        50
                          rifle       0.50      0.46      0.48        50
-                 rocking_chair       0.75      0.78      0.76        50
+                 rocking_chair       0.78      0.76      0.77        50
                     rotisserie       0.84      0.86      0.85        50
-                 rubber_eraser       0.50      0.58      0.54        50
+                 rubber_eraser       0.51      0.56      0.53        50
                     rugby_ball       0.91      0.84      0.88        50
-                          rule       0.73      0.76      0.75        50
-                  running_shoe       0.80      0.80      0.80        50
-                          safe       0.74      0.86      0.80        50
-                    safety_pin       0.77      0.66      0.71        50
+                          rule       0.69      0.74      0.71        50
+                  running_shoe       0.82      0.80      0.81        50
+                          safe       0.74      0.84      0.79        50
+                    safety_pin       0.81      0.68      0.74        50
                     saltshaker       0.65      0.72      0.69        50
-                        sandal       0.64      0.76      0.70        50
+                        sandal       0.63      0.76      0.69        50
                         sarong       0.69      0.70      0.69        50
-                           sax       0.86      0.72      0.78        50
-                      scabbard       0.73      0.82      0.77        50
-                         scale       0.79      0.74      0.76        50
-                    school_bus       0.84      0.92      0.88        50
-                      schooner       0.71      0.84      0.77        50
+                           sax       0.84      0.72      0.77        50
+                      scabbard       0.75      0.82      0.78        50
+                         scale       0.74      0.74      0.74        50
+                    school_bus       0.85      0.92      0.88        50
+                      schooner       0.71      0.82      0.76        50
                     scoreboard       0.82      0.92      0.87        50
-                        screen       0.42      0.16      0.23        50
-                         screw       0.82      0.90      0.86        50
-                   screwdriver       0.49      0.44      0.46        50
-                     seat_belt       0.72      0.84      0.78        50
-                sewing_machine       0.84      0.86      0.85        50
-                        shield       0.60      0.62      0.61        50
-                     shoe_shop       0.72      0.82      0.77        50
-                         shoji       0.90      0.86      0.88        50
-               shopping_basket       0.60      0.58      0.59        50
-                 shopping_cart       0.75      0.80      0.78        50
-                        shovel       0.65      0.66      0.65        50
-                    shower_cap       0.91      0.80      0.85        50
+                        screen       0.40      0.16      0.23        50
+                         screw       0.83      0.90      0.87        50
+                   screwdriver       0.48      0.44      0.46        50
+                     seat_belt       0.74      0.84      0.79        50
+                sewing_machine       0.80      0.86      0.83        50
+                        shield       0.57      0.62      0.60        50
+                     shoe_shop       0.71      0.82      0.76        50
+                         shoji       0.89      0.84      0.87        50
+               shopping_basket       0.62      0.58      0.60        50
+                 shopping_cart       0.78      0.80      0.79        50
+                        shovel       0.64      0.64      0.64        50
+                    shower_cap       0.93      0.76      0.84        50
                 shower_curtain       0.73      0.70      0.71        50
-                           ski       0.73      0.80      0.76        50
-                      ski_mask       0.87      0.68      0.76        50
-                  sleeping_bag       0.71      0.70      0.71        50
+                           ski       0.72      0.78      0.75        50
+                      ski_mask       0.89      0.68      0.77        50
+                  sleeping_bag       0.71      0.72      0.71        50
                     slide_rule       0.93      0.78      0.85        50
-                  sliding_door       0.43      0.46      0.45        50
+                  sliding_door       0.44      0.46      0.45        50
                           slot       0.88      0.92      0.90        50
-                       snorkel       0.81      0.94      0.87        50
+                       snorkel       0.78      0.94      0.85        50
                     snowmobile       0.84      0.98      0.91        50
                       snowplow       0.83      0.90      0.87        50
-                soap_dispenser       0.73      0.64      0.68        50
+                soap_dispenser       0.71      0.64      0.67        50
                    soccer_ball       0.80      0.96      0.87        50
                           sock       0.72      0.68      0.70        50
-                    solar_dish       0.82      0.80      0.81        50
-                      sombrero       0.77      0.68      0.72        50
-                     soup_bowl       0.58      0.62      0.60        50
+                    solar_dish       0.83      0.80      0.82        50
+                      sombrero       0.76      0.70      0.73        50
+                     soup_bowl       0.56      0.62      0.59        50
                      space_bar       0.69      0.44      0.54        50
                   space_heater       0.81      0.58      0.67        50
                  space_shuttle       0.96      0.94      0.95        50
-                       spatula       0.53      0.50      0.52        50
+                       spatula       0.56      0.50      0.53        50
                      speedboat       0.86      0.96      0.91        50
-                    spider_web       0.86      0.74      0.80        50
+                    spider_web       0.84      0.74      0.79        50
                        spindle       0.86      0.98      0.92        50
-                    sports_car       0.65      0.52      0.58        50
-                     spotlight       0.42      0.30      0.35        50
-                         stage       0.52      0.72      0.61        50
+                    sports_car       0.60      0.52      0.56        50
+                     spotlight       0.39      0.30      0.34        50
+                         stage       0.54      0.72      0.62        50
               steam_locomotive       0.93      1.00      0.96        50
-             steel_arch_bridge       0.85      0.90      0.87        50
+             steel_arch_bridge       0.87      0.90      0.88        50
                     steel_drum       0.93      0.86      0.90        50
-                   stethoscope       0.67      0.74      0.70        50
+                   stethoscope       0.69      0.74      0.71        50
                          stole       0.67      0.58      0.62        50
-                    stone_wall       0.93      0.78      0.85        50
-                     stopwatch       0.77      0.66      0.71        50
+                    stone_wall       0.93      0.80      0.86        50
+                     stopwatch       0.73      0.66      0.69        50
                          stove       0.70      0.52      0.60        50
-                      strainer       0.54      0.56      0.55        50
+                      strainer       0.55      0.56      0.55        50
                      streetcar       0.96      0.92      0.94        50
-                     stretcher       0.76      0.64      0.70        50
+                     stretcher       0.74      0.62      0.67        50
                   studio_couch       0.69      0.88      0.77        50
-                         stupa       0.89      0.94      0.91        50
+                         stupa       0.90      0.94      0.92        50
                      submarine       0.92      0.88      0.90        50
                           suit       0.59      0.64      0.62        50
-                       sundial       0.79      0.68      0.73        50
-                      sunglass       0.55      0.34      0.42        50
-                    sunglasses       0.50      0.46      0.48        50
-                     sunscreen       0.54      0.44      0.48        50
-             suspension_bridge       0.74      0.68      0.71        50
-                          swab       0.69      0.88      0.77        50
-                    sweatshirt       0.90      0.52      0.66        50
-               swimming_trunks       0.71      0.72      0.71        50
-                         swing       0.69      0.72      0.71        50
-                        switch       0.77      0.68      0.72        50
-                       syringe       0.67      0.62      0.65        50
+                       sundial       0.81      0.68      0.74        50
+                      sunglass       0.55      0.36      0.43        50
+                    sunglasses       0.51      0.48      0.49        50
+                     sunscreen       0.59      0.44      0.51        50
+             suspension_bridge       0.76      0.74      0.75        50
+                          swab       0.70      0.88      0.78        50
+                    sweatshirt       0.89      0.50      0.64        50
+               swimming_trunks       0.72      0.76      0.74        50
+                         swing       0.72      0.72      0.72        50
+                        switch       0.78      0.70      0.74        50
+                       syringe       0.65      0.64      0.65        50
                     table_lamp       0.61      0.54      0.57        50
-                          tank       0.73      0.74      0.73        50
-                   tape_player       0.33      0.42      0.37        50
-                        teapot       0.66      0.80      0.72        50
+                          tank       0.72      0.76      0.74        50
+                   tape_player       0.32      0.42      0.36        50
+                        teapot       0.65      0.80      0.71        50
                          teddy       0.64      0.82      0.72        50
-                    television       0.59      0.68      0.63        50
-                   tennis_ball       0.77      0.82      0.80        50
-                        thatch       0.90      0.92      0.91        50
-               theater_curtain       0.83      0.86      0.84        50
+                    television       0.58      0.64      0.61        50
+                   tennis_ball       0.78      0.78      0.78        50
+                        thatch       0.92      0.92      0.92        50
+               theater_curtain       0.82      0.84      0.83        50
                        thimble       0.83      0.70      0.76        50
                       thresher       0.82      0.62      0.70        50
-                        throne       0.83      0.68      0.75        50
-                     tile_roof       0.76      0.78      0.77        50
+                        throne       0.81      0.70      0.75        50
+                     tile_roof       0.75      0.80      0.78        50
                        toaster       0.76      0.68      0.72        50
-                  tobacco_shop       0.62      0.42      0.50        50
-                   toilet_seat       0.66      0.74      0.70        50
+                  tobacco_shop       0.64      0.42      0.51        50
+                   toilet_seat       0.65      0.74      0.69        50
                          torch       0.88      0.74      0.80        50
                     totem_pole       0.85      0.92      0.88        50
                      tow_truck       0.70      0.60      0.65        50
-                       toyshop       0.57      0.62      0.60        50
-                       tractor       0.77      0.86      0.81        50
+                       toyshop       0.57      0.64      0.60        50
+                       tractor       0.75      0.86      0.80        50
                  trailer_truck       0.75      0.86      0.80        50
-                          tray       0.55      0.58      0.56        50
-                   trench_coat       0.74      0.64      0.69        50
-                      tricycle       0.70      0.88      0.78        50
+                          tray       0.52      0.58      0.55        50
+                   trench_coat       0.76      0.64      0.70        50
+                      tricycle       0.69      0.88      0.77        50
                       trimaran       0.83      0.86      0.84        50
-                        tripod       0.73      0.74      0.73        50
+                        tripod       0.70      0.74      0.72        50
                 triumphal_arch       0.90      0.94      0.92        50
                     trolleybus       0.89      0.98      0.93        50
-                      trombone       0.71      0.78      0.74        50
-                           tub       0.47      0.42      0.44        50
-                     turnstile       0.83      0.86      0.84        50
+                      trombone       0.72      0.78      0.75        50
+                           tub       0.45      0.44      0.44        50
+                     turnstile       0.81      0.86      0.83        50
            typewriter_keyboard       0.81      0.76      0.78        50
-                      umbrella       0.61      0.66      0.63        50
-                      unicycle       0.73      0.88      0.80        50
-                       upright       0.69      0.80      0.74        50
-                        vacuum       0.66      0.82      0.73        50
-                          vase       0.67      0.48      0.56        50
+                      umbrella       0.65      0.66      0.65        50
+                      unicycle       0.75      0.88      0.81        50
+                       upright       0.70      0.80      0.75        50
+                        vacuum       0.63      0.84      0.72        50
+                          vase       0.69      0.48      0.56        50
                          vault       0.68      0.82      0.75        50
-                        velvet       0.54      0.28      0.37        50
-               vending_machine       0.83      0.96      0.89        50
-                      vestment       0.65      0.56      0.60        50
+                        velvet       0.56      0.28      0.37        50
+               vending_machine       0.86      0.96      0.91        50
+                      vestment       0.64      0.56      0.60        50
                        viaduct       0.85      0.82      0.84        50
-                        violin       0.72      0.76      0.74        50
+                        violin       0.71      0.74      0.73        50
                     volleyball       0.85      0.94      0.90        50
-                   waffle_iron       0.87      0.80      0.83        50
-                    wall_clock       0.61      0.74      0.67        50
-                        wallet       0.65      0.62      0.63        50
-                      wardrobe       0.56      0.70      0.62        50
+                   waffle_iron       0.87      0.78      0.82        50
+                    wall_clock       0.62      0.72      0.67        50
+                        wallet       0.61      0.62      0.61        50
+                      wardrobe       0.56      0.72      0.63        50
                       warplane       0.66      0.80      0.72        50
                      washbasin       0.72      0.82      0.77        50
-                        washer       0.86      0.84      0.85        50
-                  water_bottle       0.57      0.70      0.63        50
-                     water_jug       0.32      0.24      0.28        50
+                        washer       0.88      0.84      0.86        50
+                  water_bottle       0.58      0.70      0.64        50
+                     water_jug       0.35      0.26      0.30        50
                    water_tower       0.96      0.96      0.96        50
                    whiskey_jug       0.94      0.62      0.75        50
-                       whistle       0.77      0.74      0.76        50
-                           wig       0.79      0.82      0.80        50
-                 window_screen       0.62      0.64      0.63        50
+                       whistle       0.80      0.74      0.77        50
+                           wig       0.74      0.80      0.77        50
+                 window_screen       0.61      0.62      0.61        50
                   window_shade       0.55      0.66      0.60        50
-                   Windsor_tie       0.86      0.36      0.51        50
-                   wine_bottle       0.64      0.56      0.60        50
-                          wing       0.76      0.64      0.70        50
-                           wok       0.53      0.50      0.52        50
-                  wooden_spoon       0.60      0.78      0.68        50
-                          wool       0.62      0.36      0.46        50
-                    worm_fence       0.88      0.72      0.79        50
-                         wreck       0.83      0.90      0.87        50
-                          yawl       0.93      0.78      0.85        50
-                          yurt       0.93      1.00      0.96        50
-                      web_site       0.78      0.98      0.87        50
-                    comic_book       0.62      0.80      0.70        50
-              crossword_puzzle       0.90      0.92      0.91        50
-                   street_sign       0.73      0.74      0.73        50
-                 traffic_light       0.74      0.90      0.81        50
-                   book_jacket       0.63      0.66      0.65        50
-                          menu       0.87      0.90      0.88        50
-                         plate       0.48      0.54      0.51        50
-                     guacamole       0.85      0.78      0.81        50
-                      consomme       0.72      0.58      0.64        50
+                   Windsor_tie       0.89      0.34      0.49        50
+                   wine_bottle       0.63      0.54      0.58        50
+                          wing       0.74      0.64      0.69        50
+                           wok       0.54      0.50      0.52        50
+                  wooden_spoon       0.59      0.76      0.67        50
+                          wool       0.65      0.40      0.49        50
+                    worm_fence       0.86      0.72      0.78        50
+                         wreck       0.79      0.92      0.85        50
+                          yawl       0.91      0.78      0.84        50
+                          yurt       0.94      1.00      0.97        50
+                      web_site       0.79      0.98      0.88        50
+                    comic_book       0.65      0.78      0.71        50
+              crossword_puzzle       0.92      0.92      0.92        50
+                   street_sign       0.70      0.74      0.72        50
+                 traffic_light       0.73      0.90      0.80        50
+                   book_jacket       0.65      0.66      0.65        50
+                          menu       0.86      0.88      0.87        50
+                         plate       0.47      0.54      0.50        50
+                     guacamole       0.85      0.80      0.82        50
+                      consomme       0.72      0.56      0.63        50
                        hot_pot       0.60      0.80      0.68        50
-                        trifle       0.80      0.96      0.87        50
-                     ice_cream       0.55      0.62      0.58        50
-                     ice_lolly       0.75      0.84      0.79        50
-                   French_loaf       0.72      0.68      0.70        50
+                        trifle       0.77      0.96      0.86        50
+                     ice_cream       0.57      0.60      0.58        50
+                     ice_lolly       0.74      0.84      0.79        50
+                   French_loaf       0.69      0.68      0.69        50
                          bagel       0.74      0.68      0.71        50
-                       pretzel       0.93      0.82      0.87        50
+                       pretzel       0.93      0.80      0.86        50
                   cheeseburger       0.74      0.96      0.83        50
-                        hotdog       0.80      0.86      0.83        50
+                        hotdog       0.78      0.86      0.82        50
                  mashed_potato       0.71      0.70      0.71        50
                   head_cabbage       0.96      0.88      0.92        50
                       broccoli       0.86      0.88      0.87        50
                    cauliflower       0.87      0.90      0.88        50
-                      zucchini       0.81      0.78      0.80        50
+                      zucchini       0.80      0.78      0.79        50
               spaghetti_squash       0.86      0.84      0.85        50
                   acorn_squash       0.84      0.86      0.85        50
-              butternut_squash       0.82      0.80      0.81        50
+              butternut_squash       0.80      0.80      0.80        50
                       cucumber       0.70      0.76      0.73        50
-                     artichoke       0.86      0.84      0.85        50
+                     artichoke       0.84      0.86      0.85        50
                    bell_pepper       0.90      0.90      0.90        50
-                       cardoon       0.86      0.88      0.87        50
-                      mushroom       0.58      0.36      0.44        50
-                  Granny_Smith       0.90      0.90      0.90        50
+                       cardoon       0.88      0.86      0.87        50
+                      mushroom       0.60      0.36      0.45        50
+                  Granny_Smith       0.87      0.90      0.88        50
                     strawberry       0.80      0.64      0.71        50
-                        orange       0.73      0.76      0.75        50
-                         lemon       0.78      0.78      0.78        50
-                           fig       0.91      0.86      0.89        50
+                        orange       0.75      0.76      0.75        50
+                         lemon       0.78      0.80      0.79        50
+                           fig       0.90      0.86      0.88        50
                      pineapple       0.90      0.92      0.91        50
-                        banana       0.92      0.92      0.92        50
-                     jackfruit       0.94      0.92      0.93        50
+                        banana       0.90      0.92      0.91        50
+                     jackfruit       0.92      0.92      0.92        50
                  custard_apple       1.00      0.98      0.99        50
-                   pomegranate       0.91      0.86      0.89        50
-                           hay       0.91      0.84      0.88        50
+                   pomegranate       0.92      0.88      0.90        50
+                           hay       0.89      0.84      0.87        50
                      carbonara       0.90      0.88      0.89        50
-               chocolate_sauce       0.62      0.62      0.62        50
-                         dough       0.71      0.44      0.54        50
-                     meat_loaf       0.76      0.76      0.76        50
+               chocolate_sauce       0.60      0.60      0.60        50
+                         dough       0.69      0.44      0.54        50
+                     meat_loaf       0.76      0.74      0.75        50
                          pizza       0.76      0.82      0.79        50
                         potpie       0.77      0.68      0.72        50
-                       burrito       0.79      0.90      0.84        50
-                      red_wine       0.68      0.64      0.66        50
-                      espresso       0.73      0.64      0.68        50
-                           cup       0.43      0.44      0.44        50
-                        eggnog       0.67      0.58      0.62        50
-                           alp       0.60      0.56      0.58        50
-                        bubble       0.86      0.88      0.87        50
-                         cliff       0.57      0.68      0.62        50
+                       burrito       0.78      0.90      0.83        50
+                      red_wine       0.70      0.64      0.67        50
+                      espresso       0.76      0.64      0.70        50
+                           cup       0.46      0.44      0.45        50
+                        eggnog       0.69      0.58      0.63        50
+                           alp       0.62      0.56      0.59        50
+                        bubble       0.85      0.88      0.86        50
+                         cliff       0.54      0.66      0.59        50
                     coral_reef       0.63      0.78      0.70        50
                         geyser       0.98      0.98      0.98        50
-                      lakeside       0.49      0.52      0.50        50
-                    promontory       0.65      0.48      0.55        50
-                       sandbar       0.67      0.64      0.65        50
-                      seashore       0.40      0.38      0.39        50
-                        valley       0.71      0.74      0.73        50
-                       volcano       0.93      0.84      0.88        50
+                      lakeside       0.50      0.50      0.50        50
+                    promontory       0.63      0.48      0.55        50
+                       sandbar       0.64      0.64      0.64        50
+                      seashore       0.38      0.34      0.36        50
+                        valley       0.71      0.68      0.69        50
+                       volcano       0.93      0.86      0.90        50
                     ballplayer       0.79      0.84      0.82        50
-                         groom       0.67      0.78      0.72        50
-                   scuba_diver       0.83      0.86      0.84        50
+                         groom       0.66      0.78      0.72        50
+                   scuba_diver       0.82      0.84      0.83        50
                       rapeseed       1.00      1.00      1.00        50
                          daisy       0.94      0.92      0.93        50
          yellow_lady's_slipper       1.00      1.00      1.00        50
-                          corn       0.41      0.46      0.43        50
+                          corn       0.42      0.46      0.44        50
                          acorn       0.80      0.98      0.88        50
                            hip       0.86      0.98      0.92        50
                        buckeye       0.94      0.94      0.94        50
@@ -995,11 +995,11 @@ American_Staffordshire_terrier       0.64      0.72      0.68        50
                         agaric       0.66      0.86      0.75        50
                      gyromitra       0.92      0.96      0.94        50
                      stinkhorn       0.83      0.90      0.87        50
-                     earthstar       0.93      1.00      0.96        50
+                     earthstar       0.94      1.00      0.97        50
               hen-of-the-woods       0.88      0.88      0.88        50
                         bolete       0.78      0.76      0.77        50
-                           ear       0.50      0.46      0.48        50
-                 toilet_tissue       0.66      0.50      0.57        50
+                           ear       0.51      0.46      0.48        50
+                 toilet_tissue       0.68      0.50      0.57        50
 
                       accuracy                           0.78     50000
                      macro avg       0.78      0.78      0.77     50000
