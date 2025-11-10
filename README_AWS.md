@@ -215,18 +215,151 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   -
 ```bash
 tmux new -s imagenet1k_full -n train
 
-# Inside tmux
+# inside tmux
 source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
 cd ~/week9_ERAV4_ImageNet_ResNet-50_Model_Experiments
 
-bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   --stats-file data_stats/imagenet_1k_aws_stats.json   --show-progress   --amp --channels-last   --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6   --wandb --wandb-project imagenet1k_runs   --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6
+# NGPUS  DATA_PATH    EPOCHS  PER_GPU_BATCH  WORKERS   --extra-args...
+bash scripts/launch_multi_gpu.sh 4 /mnt/imagenet1k 150 256 12 \
+  --max-lr 0.25 \
+  --stats-file data_stats/imagenet_1k_aws_stats.json \
+  --amp --channels-last \
+  --out-dir imagenet1kfull_g5_4gpu_dali_nvme_lr0p25_bs256x4_e150_work12 \
+  --wandb --wandb-project imagenet1k_runs \
+  --wandb-tags imagenet1k_full,dali,4gpu,nvme,lr0p25,bs256x4,e150,work12
 ```
+
+🔁 For Resume training  refer to Appendix C
+
+Notes
+
+launch_multi_gpu.sh takes: NGPUS DATA EPOCHS BATCH WORKERS ...EXTRA_ARGS.
+
+BATCH is per-GPU in your multi script (it passes --batch-size straight through to your train script). So with 256 per GPU and 4 GPUs, global batch = 1024.
+
+Scaled LR rule-of-thumb: if single-GPU 256 used --max-lr 0.125, 4× GPUs → LR ≈ 0.5. I suggested a conservative 0.25. Tweak after a short burn-in/val check.
+
+Workers: g5.12xlarge has 48 vCPUs; 12 workers is a good start (scale 10–16 if input pipeline is the bottleneck).
 
 > Ensure your script is **DDP‑ready** (uses `DistributedSampler`, logs on rank‑0 only, and AMP via `autocast`/`GradScaler`).
 
 ---
+## 🧾 Appendix C — Resuming trainings 
 
-## 🧾 Appendix C — Shutdown & Cost‑Control Guide
+The training logic now supports **resuming, extending, or freezing LR schedules** cleanly using environment variables — no code edits needed.
+
+### 1️⃣ Fresh Training Run
+**Single GPU (g5.xlarge):**
+```bash
+tmux new -s imagenet1k_full -n train
+
+# Inside tmux
+source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
+cd ~/week9_ERAV4_ImageNet_ResNet-50_Model_Experiments
+
+# (Optional) start W&B session automatically when resuming
+unset RESET_SCHED
+unset FREEZE_LR
+unset FREEZE_LR_VALUE
+
+bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6 \
+  --max-lr 0.125 \
+  --stats-file data_stats/imagenet_1k_aws_stats.json \
+  --show-progress --amp --channels-last \
+  --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6 \
+  --wandb --wandb-project imagenet1k_runs \
+  --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6
+```
+
+### 2️⃣ Resume Training (Normal Resume)
+When continuing from a saved checkpoint (`--resume checkpoints/.../last_epochXXX.pth`),  
+just run normally — no env vars required:
+```bash
+bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6 \
+  --resume checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch150.pth \
+  --max-lr 0.125 --amp --channels-last --show-progress
+```
+
+The scheduler resumes **exactly** where it left off, restoring all states (optimizer, scaler, scheduler).
+
+---
+
+### 3️⃣ Resume and Extend Total Epochs
+If you trained 0‑120 and now want to continue to 150 epochs:
+```bash
+export RESET_SCHED=1      # rebuild scheduler for the new end‑epoch
+unset FREEZE_LR           # let OneCycleLR handle learning rate
+unset FREEZE_LR_VALUE
+```
+Then launch as usual with `--epochs 150`.  
+The scheduler realigns itself from the current `start_epoch` → new total.
+
+---
+
+### 4️⃣ Resume and Freeze Learning Rate
+If validation accuracy is stable and you want constant LR continuation:
+```bash
+export FREEZE_LR=1
+unset RESET_SCHED
+```
+Optionally, specify a custom LR:
+```bash
+export FREEZE_LR_VALUE=0.00005
+```
+This freezes the LR for the rest of the run — useful for convergence stabilization.
+
+---
+
+### 5️⃣ Combined: Resume + Extend + Freeze
+```bash
+export RESET_SCHED=1
+export FREEZE_LR=1
+unset FREEZE_LR_VALUE
+```
+This rebuilds the scheduler for new epochs but immediately replaces it with a constant‑LR version.
+
+---
+
+### ✅ Example Scenarios
+
+| Case | Environment | Result |
+|------|--------------|--------|
+| Train fresh run with fixed LR | `FREEZE_LR=1`, no resume | Constant LR entire run |
+| Resume normally | (no env vars) | Scheduler continues smoothly |
+| Resume + extend epochs | `RESET_SCHED=1` | Scheduler realigned, OneCycle continues |
+| Resume + freeze LR | `FREEZE_LR=1` | LR frozen to last used value |
+| Resume + extend + freeze | `RESET_SCHED=1 + FREEZE_LR=1` | Scheduler rebuilt, then frozen immediately |
+
+---
+
+### 💡 Why this approach is better
+
+| Concept | Controlled by | Purpose |
+|----------|---------------|----------|
+| Resume logic | `--resume`, `RESET_SCHED` | Decides where to start, which weights, how to align scheduler |
+| Freeze logic | `FREEZE_LR`, `FREEZE_LR_VALUE` | Controls whether LR stays constant or dynamic |
+
+---
+
+### 🧾 Summary of Improvements
+
+| Issue | Old Behavior | New Behavior |
+|--------|---------------|---------------|
+| Resume with new total epochs | LR curve restarted or spiked | Smoothly realigned & clamped |
+| Freeze LR | Sometimes froze to 0 | Properly freezes to valid last LR or custom value |
+| No resume | Scheduler still looked for ckpt | Clean start path (`ckpt=None`) |
+| Scheduler handling | Custom patchwork | Unified inside PyTorch `_LRScheduler` |
+| Readability | Mixed resume/freeze logic | Clearly separated, labeled sections |
+
+### 🧾Notes
+If your last checkpoint was produced by a single-GPU run, you can still resume on multi-GPU (and vice-versa) as long as your training script saves the usual state_dict and optimizer/scheduler state—DDP will wrap the model on launch. Just make sure:
+
+You pass --resume <.pth> that contains model, optimizer, scaler, and epoch.
+
+The data path and class count match what the checkpoint was trained on.
+---
+
+## 🧾 Appendix D — Shutdown & Cost‑Control Guide
 
 | Task | Action | Why |
 |---|---|---|
@@ -254,5 +387,3 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   -
 - **Cost safety**: Stop/terminate policy, delete detached volumes, keep snapshots only.
 
 ---
-
-> If you need a **DDP patch** for your `train.py` (init, sampler, rank‑0 logging), paste your script and we’ll drop in a clean diff that keeps single‑GPU flow intact while enabling multi‑GPU with `torchrun`.

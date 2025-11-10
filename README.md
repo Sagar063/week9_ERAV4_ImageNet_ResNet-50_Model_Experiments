@@ -118,14 +118,9 @@ pip install -r requirements_aws.txt
     ```bash
     kaggle competitions download -c imagenet-object-localization-challenge
     ```
-#### ImageNet-1k :  download in AWS machine. Refer  in local machine
-  - Size: **156 GB**
-  - Source 1: https://www.kaggle.com/c/imagenet-object-localization-challenge/
-    - Download via Kaggle CLI:
-    ```bash
-    kaggle competitions download -c imagenet-object-localization-challenge
-    ```
-Place as:
+#### ImageNet-1k :  download in AWS machine. Refer README_AWS.md for instructions
+
+Once the dataset is downloaded place as:
 ```
 data/imagenet/
   ├─ train/
@@ -140,7 +135,7 @@ python lr_finder.py find_lr --num_iter 100 --end_lr 1.0 --batch_size 64
 
 **Run training (Local)**
 ```bash
-python train_full_ImageNet1k_SingleGPU.py --name r50_onecycle_amp --epochs 20 --batch-size 64   --max-lr 0.1 --workers 8 --img-size 224 --reports
+python train_full_ImageNet1k_SingleGPU.py --data-root data/imagenet  --batch-size 64 --epochs 150 --max-lr 0.0125  --pct-start 0.1 --workers 8 --reports --use-best-for-reports --name r50_imagenet1k_onecycle_amp_bs64_ep150
 ```
 
 **Run training (AWS)**
@@ -160,16 +155,17 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   -
 ```bash
 python train_full_ImageNet1k_SingleGPU.py   --data-root data/imagenet   --batch-size 64   --epochs 235   --max-lr 0.0125   --pct-start 0.1   --workers 8   --reports   --use-best-for-reports   --name r50_imagenet1k_onecycle_amp_bs64_ep150   --resume
 ```
-
-**AWS**
+ 
+**AWS** Refer README_AWS.md for more instructions
 ```bash
 bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   --stats-file data_stats/imagenet_1k_aws_stats.json   --show-progress   --amp --channels-last   --resume /mnt/imagenet1k/checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch120.pth   --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6   --wandb --wandb-project imagenet1k_runs   --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6,resumed_e120
 ```
 ### 2.4 Key arguments
+#### For training in local machine
 | Arg | Default | Meaning |
 |---|---:|---|
-| `--data-root` | `data/imagenet-mini` | Root containing `train/` and `val/` (ImageFolder) |
-| `--name` | `r50_onecycle_amp` | Run/experiment name used for all output folders |
+| `--data-root` | `data/imagenet` | Root containing `train/` and `val/` (ImageFolder) | --> dataset path for training train_full_ImageNet1k_SingleGPU.py
+| `--name` | `r50_imagenet1k_onecycle_amp_bs64_ep150` | Run/experiment name used for all output folders |
 | `--epochs` | `20` | Number of epochs |
 | `--batch-size` | `64` | Global batch size (single-GPU) |
 | `--workers` | `8` | DataLoader workers |
@@ -182,6 +178,63 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   -
 | `--use-class-style-aug` | `False` | Alternate augmentation style |
 | `--resume` | `False` | Resume from `checkpoints/<name>/checkpoint.pth` |
 | `--reports` | `False` | Generate classification report & save curves |
+
+#### For training in AWS machine
+
+| Arg | Default | Meaning |
+|---|---:|---|
+| `--data` | **required** | Root that contains `train/` and `val/` (ImageFolder) |
+| `--out-dir` | `./` | Run name (used to create `/mnt/imagenet1k/{out,runs,reports,checkpoints}/<out-dir>`) |
+| `--epochs` | `90` | Total epochs (used to align/extend scheduler) |
+| `--batch-size` | `256` | **Per-GPU** batch size (global = `batch × world_size`) |
+| `--eval-batch-size` | `256` | Validation batch size |
+| `--workers` | `min(8, cpu_count)` | DataLoader workers |
+| `--crop-size` | `224` | Input crop size |
+| `--loader` | `dali` | `dali` (fast) or `albumentations` (PyTorch DataLoader path) |
+| `--stats-file` | `None` | JSON with mean/std (used by Albumentations). Example: `data_stats/imagenet_1k_aws_stats.json` |
+| `--stats-samples` | `50000` | Samples to compute mean/std (albumentations path only) |
+| `--use-class-style` | `False` | Enable class-style augmentation (albumentations only) |
+| `--amp` | off by default | Enable Automatic Mixed Precision |
+| `--channels-last` | off by default | Use NHWC memory format |
+| `--resume` | `''` | Path to checkpoint (`.../last_epochXYZ.pth` or `best_acc_epochXYZ.pth`) |
+| `--num-classes` | `1000` | Number of classes |
+| `--pretrained` | off | Start from torchvision weights (for finetune experiments) |
+| `--seed` | `42` | Seed (with cudnn.benchmark = True) |
+| `--use-tb` | off | TensorBoard logging → `runs/<out-dir>` |
+| `--show-progress` | off | Show per-batch `tqdm` bars (rank-0 only) |
+| `--do-report` | off | Save `classification_report.txt` and `confusion_matrix.csv` |
+| `--max-lr` | `None` | Peak LR (if None → linear scaling `0.1 × (global_bsz / 256)`) |
+| `--pct-start` | `0.3` | OneCycle warm-up fraction |
+| `--div-factor` | `25.0` | OneCycle initial LR = `max_lr / div_factor` |
+| `--final-div-factor` | `1e4` | OneCycle final LR = `max_lr / final_div_factor` |
+| `--wandb` | off | Enable Weights & Biases |
+| `--wandb-project` | `imagenet1k_runs` | W&B project name |
+| `--wandb-entity` | `None` | W&B entity/org (optional) |
+| `--wandb-tags` | `''` | Comma-separated tags |
+| `--wandb-offline` | off | Log offline and sync later |
+
+---
+
+Environment Variables (affect resume/freeze behavior)
+
+| Env Var | Effect | When to Use |
+|---|---|---|
+| `RESET_SCHED=1` | Rebuilds and realigns scheduler when resuming with a different `--epochs`. | Extend or shrink total epochs on resume. |
+| `FREEZE_LR=1` | Replaces scheduler with constant-LR scheduler. | Keep LR fixed for entire (resumed) run. |
+| `FREEZE_LR_VALUE=<float>` | Explicit LR value if freezing. | Optional override; else uses last used LR. |
+
+---
+
+Example Combinations
+
+| Scenario | Command / Env Vars | Result |
+|---|---|---|
+| **Fresh run with fixed LR** | `FREEZE_LR=1`, no resume | Constant LR entire run |
+| **Resume normally** | (no env vars) | Scheduler continues smoothly |
+| **Resume + extend epochs** | `export RESET_SCHED=1` | Scheduler realigned, OneCycle continues |
+| **Resume + freeze LR** | `export FREEZE_LR=1` | LR frozen to last used value |
+| **Resume + extend + freeze** | `export RESET_SCHED=1; export FREEZE_LR=1` | Scheduler rebuilt then frozen immediately |
+
 
 ### 2.5 Repository layout
 ```
