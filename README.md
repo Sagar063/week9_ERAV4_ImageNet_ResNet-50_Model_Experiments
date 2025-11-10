@@ -538,6 +538,23 @@ This section consolidates the training results and performance comparison betwee
 ![Trainining Progress](images/Local_Training_Image6_TrainTensorBoard.png)
 ![Evaluation](images/Local_Valdiation_Image7_TrainTensorBoard.png)
 
+<details>
+<summary><strong>6.A.1 Training logs (markdown)</strong></summary>
+
+```markdown
+{% include_relative out/r50_imagenet1k_onecycle_amp_bs64_ep150/logs.md %}
+```
+</details>
+
+<details>
+<summary><strong>6.A.2 Model summary</strong></summary>
+
+```text
+{% include_relative reports/r50_imagenet1k_onecycle_amp_bs64_ep150/model_summary.txt %}
+```
+</details>
+
+
 ---
 
 ### ☁️ B) AWS Training (g5.xlarge A10G)
@@ -594,6 +611,21 @@ This section consolidates the training results and performance comparison betwee
 A consolidated W&B report combining all AWS Spot-instance runs (0–195 epochs):
 [View full W&B Report — *ImageNet1k Full Combined ResNet-50 AWS Training*](https://api.wandb.ai/links/sagar1doshi-bits-pilani/i0uhx5xj)
 ![Trainining and Evaluation Progress](images/AWS_Training_Image7_wanb_report.png)
+
+
+```markdown
+{% include_relative out/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/logs.md %}
+```
+</details>
+
+<details>
+<summary><strong>7.2 Model summary</strong></summary>
+
+```text
+{% include_relative reports/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/model_summary.txt %}
+```
+</details>
+
 **Cost Breakdown**
 
 | Task | Est. Cost (USD) |
