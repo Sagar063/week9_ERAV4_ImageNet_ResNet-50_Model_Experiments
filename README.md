@@ -480,7 +480,7 @@ max_lr = 0.1 × batch size/256
 - Loss decreases smoothly up to **~0.10–0.12**, then trends upward.  
 - We selected **`--max-lr 0.125`** for OneCycleLR on AWS (used in training commands above).  
 - For local runs (smaller batch), a slightly lower `max_lr` (e.g., **0.1**) is reasonable.
-	​
+
 
 > **Auto-filled (from runs):** For run **`r50_imagenet1k_onecycle_amp_bs64_ep150`**, best Val Top-1 = **77.82%**, Top-5 = **93.82%** at epoch **228**.
 
@@ -521,15 +521,22 @@ This section consolidates the training results and performance comparison betwee
 | Validation Top-1 | 77.82% |
 | Validation Top-5 | 93.82% |
 
-> *(Example ≈ Train 71.45 % / 88.92 %  •  Val 73.77 % / 91.87 %)*
 
 **Visual Logs**
 
-| Type | Placeholder |
-|------|--------------|
-| CLI snapshot | ![Local Training CLI](images/Training_Image1.png) |
-| Epoch progress | ![Local Training Loss Curve](images/Training_Image3.png) |
-| TensorBoard metrics | *(add TensorBoard screenshots from `runs/r50_imagenet1k_onecycle_amp_bs64_ep150`)* |
+**CLI snapshot**
+![Local Training CLI](images/Local_Training_Image5.png)
+
+**Epoch progress**
+![Epoch 1–12](images/Local_Training_Image1.png)
+![Epoch 9–22](images/Local_Training_Image2.png)
+![Epoch 72-79](images/Local_Training_Image3.png)
+![Epoch 225-235](images/Local_Training_Image4.png)
+
+**TensorBoard metrics**
+*(added TensorBoard screenshots from `runs/r50_imagenet1k_onecycle_amp_bs64_ep150`)*
+![Trainining Progress](images/Local_Training_Image6_TrainTensorBoard.png)
+![Evaluation](images/Local_Valdiation_Image7_TrainTensorBoard.png)
 
 ---
 
@@ -564,33 +571,42 @@ This section consolidates the training results and performance comparison betwee
 | Validation Top-1 | 77.66% |
 | Validation Top-5 | 93.84% |
 
-> *(Example ≈ Train 75.60 % / 90.88 %  •  Val 76.15 % / 91.26 %)*
 
 **Runtime Snapshots & Logs**
 
-| Type | Placeholder |
-|------|--------------|
-| Training CLI log | ![AWS Training CLI](images/AWS_Training_Image1.png) |
-| GPU Usage – Training | ![GPU Usage Training 128 Batch 2 Epochs](images/GPU_Usage_AWS_Training_128Batch_2Epochs.png) |
-| GPU Usage – LR Finder | ![GPU Usage LR Finder](images/GPU_Usage_AWS_Lr_Fidner.py.png) |
-| GPU Usage – Evaluation | ![GPU Usage Evaluation](images/GPU_Usage_AWS_Evaluation_128Batch_2Epochs.png) |
-| EC2 GPU Monitor | ![EC2 GPU Usage](images/EC2_gpu_usage_training.png) |
-| EC2 Memory Monitor | ![EC2 Memory Usage](images/EC2_memory_usage_training.png) |
+**CLI snapshot**
+![AWS Training CLI](images/AWS_Training_Image1.png)
 
+**GPU Usage Training**
+![GPU Usage](images/AWS_EC2_gpu_usage_training.png)
+
+**EC2 CPU Usage Training**
+![EC2 Memory Monitor](images/AWS_EC2_CPU_memory_usage_training.png)
+
+**Epoch progress**
+![Epoch 1–12](images/AWS_Training_Image2.png)
+![Epoch 40-48](images/AWS_Training_Image3.png)
+![Epoch 120-132](images/AWS_Training_Image4.png)
+![Epoch 185-195](images/Local_Training_Image5.png)
+
+**wanbb metrics**
+
+A consolidated W&B report combining all AWS Spot-instance runs (0–195 epochs):
+[View full W&B Report — *ImageNet1k Full Combined ResNet-50 AWS Training*](https://api.wandb.ai/links/sagar1doshi-bits-pilani/i0uhx5xj)
+![Trainining and Evaluation Progress](images/AWS_Training_Image7_wanb_report.png)
 **Cost Breakdown**
 
 | Task | Est. Cost (USD) |
 |------|-----------------|
 | Dataset Download + Unzip | ≈ $6 |
-| Training (195 epochs) | ≈ $25 |
-| **Total** | **≈ $31** |
+| Training (195 epochs) | ≈ $79 |
+| **Total** | **≈ $85** |
 
 **Notes**
 - Dataset mounted at `/mnt/imagenet1k`.  
 - ~2× faster per epoch vs local (run on A10G + DALI).  
 - W&B Dashboard: add link → `https://wandb.ai/<user>/imagenet1k_runs`
 
-![AWS WandB Screenshot Placeholder](images/AWS_WandB_Screenshot.png)
 
 ---
 
@@ -599,6 +615,7 @@ This section consolidates the training results and performance comparison betwee
 | Feature | Local (4060 Ti) | AWS (A10G) |
 |----------|-----------------|-------------|
 | Batch Size | 64 | 256 |
+| Total Epoch | 235 | 195 |
 | Precision | AMP | AMP + DALI |
 | Epoch Time | ~60 min | ~30 min |
 | Total Training Hours | ~240 | ~90 |
