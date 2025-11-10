@@ -15,6 +15,16 @@ import pandas as pd
 ROOT = Path(__file__).resolve().parent
 README_PATH = ROOT / "README.md"
 
+def _safe_read(p: Path, max_chars=200000) -> str:
+    try:
+        s = p.read_text(encoding="utf-8", errors="ignore")
+        if len(s) > max_chars:
+            s = s[:max_chars] + "\n\n... [truncated]"
+        return s
+    except Exception as e:
+        return f"[could not read {p}: {e}]"
+
+
 def find_latest_exp() -> str:
     out_dir = ROOT / "out"
     if not out_dir.exists():
@@ -89,21 +99,70 @@ def main():
     exp = args.exp or find_latest_exp()
     if not exp:
         raise SystemExit("No experiment found under out/* with train_log.csv. Provide --exp <RUN_NAME>.")
+
+    # Core metrics (preserves your original behavior)
     best_top1, best_top5, best_epoch = load_best_metrics(exp)
 
+    # Local/AWS CSVs for Section 6 auto-fill
     local_csv = ROOT / "out" / "r50_imagenet1k_onecycle_amp_bs64_ep150" / "train_log.csv"
-    aws_csv = ROOT / "out" / "imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6" / "train_log.csv"
+    aws_csv   = ROOT / "out" / "imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6" / "train_log.csv"
 
-    local_metrics = aws_metrics = None
-    if local_csv.exists():
-        local_metrics = load_train_val_metrics(local_csv)
-    if aws_csv.exists():
-        aws_metrics = load_train_val_metrics(aws_csv)
+    local_metrics = load_train_val_metrics(local_csv) if local_csv.exists() else None
+    aws_metrics   = load_train_val_metrics(aws_csv)   if aws_csv.exists()   else None
 
+    # Render base README with tokens (runs, BEST_*, and Section 6 metrics)
     content = README_PATH.read_text(encoding="utf-8")
     content_new = fill_tokens(content, exp, best_top1, best_top5, best_epoch, local_metrics, aws_metrics)
+
+    # --- NEW: inline collapsible file contents (logs + model summary) ---
+    local_logs_path      = ROOT / "out" / "r50_imagenet1k_onecycle_amp_bs64_ep150" / "logs.md"
+    local_model_sum_path = ROOT / "reports" / "r50_imagenet1k_onecycle_amp_bs64_ep150" / "model_summary.txt"
+    aws_logs_path        = ROOT / "out" / "imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6" / "logs.md"
+    aws_model_sum_path   = ROOT / "reports" / "imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6" / "model_summary.txt"
+
+    replacements = {
+        # Preferred tokens you placed in README.md
+        "{{LOCAL_LOGS_MD}}":        _safe_read(local_logs_path),
+        "{{LOCAL_MODEL_SUMMARY}}":  _safe_read(local_model_sum_path),
+        "{{AWS_LOGS_MD}}":          _safe_read(aws_logs_path),
+        "{{AWS_MODEL_SUMMARY}}":    _safe_read(aws_model_sum_path),
+
+        # Backward-compat if older README copies still have include_relative
+        "{% include_relative out/r50_imagenet1k_onecycle_amp_bs64_ep150/logs.md %}": _safe_read(local_logs_path),
+        "{% include_relative reports/r50_imagenet1k_onecycle_amp_bs64_ep150/model_summary.txt %}": _safe_read(local_model_sum_path),
+        "{% include_relative out/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/logs.md %}": _safe_read(aws_logs_path),
+        "{% include_relative reports/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/model_summary.txt %}": _safe_read(aws_model_sum_path),
+    }
+    for k, v in replacements.items():
+        content_new = content_new.replace(k, v)
+    # --- END NEW ---
+
     README_PATH.write_text(content_new, encoding="utf-8")
     print(f"[ok] README.md updated. Run='{exp}' top1={best_top1:.2f} top5={best_top5:.2f} epoch={best_epoch}")
 
 if __name__ == "__main__":
     main()
+
+# def main():
+#     args = parse_args()
+#     exp = args.exp or find_latest_exp()
+#     if not exp:
+#         raise SystemExit("No experiment found under out/* with train_log.csv. Provide --exp <RUN_NAME>.")
+#     best_top1, best_top5, best_epoch = load_best_metrics(exp)
+
+#     local_csv = ROOT / "out" / "r50_imagenet1k_onecycle_amp_bs64_ep150" / "train_log.csv"
+#     aws_csv = ROOT / "out" / "imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6" / "train_log.csv"
+
+#     local_metrics = aws_metrics = None
+#     if local_csv.exists():
+#         local_metrics = load_train_val_metrics(local_csv)
+#     if aws_csv.exists():
+#         aws_metrics = load_train_val_metrics(aws_csv)
+
+#     content = README_PATH.read_text(encoding="utf-8")
+#     content_new = fill_tokens(content, exp, best_top1, best_top5, best_epoch, local_metrics, aws_metrics)
+#     README_PATH.write_text(content_new, encoding="utf-8")
+#     print(f"[ok] README.md updated. Run='{exp}' top1={best_top1:.2f} top5={best_top5:.2f} epoch={best_epoch}")
+
+# if __name__ == "__main__":
+#     main()
