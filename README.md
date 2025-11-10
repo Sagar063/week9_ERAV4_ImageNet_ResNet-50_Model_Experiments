@@ -56,6 +56,8 @@ Shows `train/loss`, `train/lr`, `train/top1`, etc., live.
 
 ---
 
+---
+
 ## 2) Quickstart
 
 ### 2.1 Clone & setup environment
@@ -364,6 +366,8 @@ week9_ERAV4_ImageNet_ResNet-50_Model_Experiments/
 
 ---
 
+---
+
 ## 3. About ImageNet
 
 **ImageNet** is one of the most influential datasets in computer vision research.  
@@ -385,6 +389,7 @@ It maintains the same structure and class diversity but is dramatically smaller,
 
 ---
 
+---
 ## 4. About ResNet-50
 
 **ResNet-50** (He et al., 2015) is a deep convolutional neural network consisting of **50 layers** built on the concept of *residual learning*.  
@@ -401,6 +406,8 @@ Residual connections (skip connections) allow gradients to flow more effectively
 
 ![ResNet-50 Architecture](images/ResNet_50_architecture.png)  
 *Residual Networks (ResNet-50) architecture.*
+
+---
 
 ---
 
@@ -483,6 +490,8 @@ max_lr = 0.1 × batch size/256
 
 
 > **Auto-filled (from runs):** For run **`r50_imagenet1k_onecycle_amp_bs64_ep150`**, best Val Top-1 = **77.82%**, Top-5 = **93.82%** at epoch **228**.
+
+---
 
 ---
 ## 6) Training and Evaluation Summary
@@ -2040,15 +2049,25 @@ Both local and AWS trainings reached strong convergence on ImageNet-1k using ide
 
 **Key observations**
 - The A10G GPU (AWS Spot) trained **~2× faster** than the RTX 4060 Ti for the same model and dataset.
-- Validation accuracy on AWS was marginally higher (~77.66% vs 77.82%), likely due to larger batch size and DALI pipeline efficiency.
-- Loss curves on both setups show smooth decay with no overfitting; OneCycleLR scheduling behaved consistently.
-- Mixed Precision (AMP) reduced memory footprint by ~40% while maintaining numerical stability.
-- DALI + NVMe pipeline on AWS noticeably improved input throughput (~nan img/s vs 679.0300 img/s).
-- The incremental gain (~+2–3 % Top-1) comes mainly from higher effective batch size and better GPU utilization.
+- Validation accuracy on AWS was **comparable but slightly lower** (~77.66 % vs 77.82 %) — indicating both setups converged similarly despite hardware and data-loading differences.
+- Loss curves on both setups show smooth decay with **no signs of overfitting**; OneCycleLR scheduling behaved consistently across environments.
+- Mixed Precision (AMP) reduced memory footprint by **≈ 40 %** while maintaining numerical stability.
+- The **DALI + NVMe** pipeline on AWS provided higher data-loading efficiency (input throughput ≈ 679 img/s vs ~nan img/s logged locally, where DALI was not used).
+- Overall training time dropped from **~240 hrs (local)** to **~90 hrs (AWS)**, validating the scalability of the same code on cloud GPUs.
+
 
 **In summary**, both experiments validate the end-to-end training pipeline on different infrastructures.  
 Local setup is ideal for prototyping; AWS g5 offers scalable, time-efficient training for large datasets.  
 The trained ResNet-50 models (≈76 % Top-1) generalize well on ImageNet-1k and are ready for deployment or fine-tuning.
+
+**Next Steps**
+
+To further accelerate training and potentially improve accuracy:
+- Experiment with **multi-GPU distributed training** on AWS (g5.4xlarge / g5.8xlarge) using PyTorch DDP or FSDP.
+- Explore **gradient accumulation** or **larger global batch sizes** for smoother learning-rate scheduling.
+- Evaluate **advanced augmentation** (e.g., MixUp, CutMix) and **label-smoothing tuning** for minor accuracy gains.
+- Benchmark **throughput vs cost efficiency** across Spot and On-Demand instances to determine optimal trade-offs.
+
 
 ---
 
