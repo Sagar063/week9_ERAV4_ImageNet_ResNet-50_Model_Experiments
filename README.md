@@ -111,13 +111,26 @@ pip install -r requirements_aws.txt
 
 ### 2.2 Train from scratch
 
-**Download dataset (Mini for quick validation)**  
-Kaggle URL: https://www.kaggle.com/datasets/ifigotin/imagenetmini-1000  
+#### ImageNet-1k :  download for training in local machine
+  - Size: **156 GB**
+  - Source 1: https://www.kaggle.com/c/imagenet-object-localization-challenge/
+    - Download via Kaggle CLI:
+    ```bash
+    kaggle competitions download -c imagenet-object-localization-challenge
+    ```
+#### ImageNet-1k :  download in AWS machine. Refer  in local machine
+  - Size: **156 GB**
+  - Source 1: https://www.kaggle.com/c/imagenet-object-localization-challenge/
+    - Download via Kaggle CLI:
+    ```bash
+    kaggle competitions download -c imagenet-object-localization-challenge
+    ```
 Place as:
 ```
-data/imagenet-mini/
+data/imagenet/
   ├─ train/
   └─ val/
+  └─ test/
 ```
 
 **Run LR-Finder (recommended)**
@@ -172,31 +185,95 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   -
 
 ### 2.5 Repository layout
 ```
-week8_ERAV4_CIFAR_100_ResNetModel_Experiments/
-├─ train.py
-├─ model.py
-├─ lr_finder.py
+week9_ERAV4_ImageNet_ResNet-50_Model_Experiments/
+├─ train.py # Train script for ImageNet-Mini (subset) experiments
+├─ train_full_ImageNet1k_SingleGPU.py # Train full ImageNet-1k on local machine (single GPU)
+├─ train_full_ImageNet_AWS.py # Train full ImageNet-1k on AWS (DALI, mixed precision)
+├─ model.py # ResNet-50 architecture definition
+├─ lr_finder.py # Learning-rate finder (plots LR vs loss)
+│
 ├─ dataset/
-│ └─ imagenet_mini.py
-├─ lr_finder_plots/                  # latest LR plot is embedded above
-├─ runs/r50_onecycle_amp/            # TensorBoard event files
-└─ out/
-│   ├─ r50_onecycle_amp/
-│      ├─ train_log.csv
-│      ├─ logs.md
-│      └─ out/
-└─ reports/
-│   ├─ r50_onecycle_amp/
-│       ├─ accuracy_curve.png
-│       ├─ classification_report.txt
-│       └─ confusion_matrix.csv
-│       ├─ loss_curve.png
-│       └─ model_summary.txt
-└─ images/
-│   ├─ {imagenet_samples.png,resnet50_arch.png}  # OPTIONAL:  images
-├─ update_readme.py
-├─ README.md
-
+│ ├─ imagenet.py # TorchVision-style ImageNet loader (for albumentations)
+│ ├─ imagenet_dali.py # NVIDIA DALI-based high-performance ImageNet loader
+│ └─ imagenet_mini.py # Lightweight ImageNet-Mini loader for debugging
+│
+├─ data/ # Training data (local mini version)
+├─ data_stats/
+│ └─ imagenet_1k_aws_stats.json # Cached channel mean/std stats used for normalization
+│
+├─ lr_finder_plots/
+│ ├─ lr_finder_plots_imagenette/ # LR finder results for Imagenette
+│ └─ lr_finder_plots_imagenet1k_AWS/ # LR finder results for AWS DALI pipeline
+│
+├─ checkpoints/
+│ ├─ imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/ # AWS (full ImageNet) runs
+│ │ ├─ best_acc_epochXXX.pth
+│ │ ├─ last_epochXXX.pth
+│ │ └─ last_epoch.pth
+│ ├─ r50_imagenet1k_onecycle_amp_bs64_ep150/ # Local full ImageNet run
+│ │ ├─ best.pth
+│ │ └─ checkpoint.pth
+│ └─ r50_onecycle_amp/ # Imagenet-Mini baseline
+│ └─ best.pth
+│
+├─ out/
+│ ├─ imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/ # AWS training logs
+│ │ ├─ train_log.csv
+│ │ ├─ logs.md
+│ │ └─ metrics.csv (optional)
+│ ├─ r50_imagenet1k_onecycle_amp_bs64_ep150/ # Local full ImageNet logs
+│ │ ├─ train_log.csv
+│ │ └─ logs.md
+│ └─ r50_onecycle_amp/ # Imagenet-Mini logs
+│ ├─ train_log.csv
+│ └─ logs.md
+│
+├─ reports/
+│ ├─ imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/ # AWS training reports
+│ │ ├─ accuracy_curve.png
+│ │ ├─ loss_curve.png
+│ │ ├─ classification_report.txt
+│ │ ├─ confusion_matrix.csv
+│ │ └─ model_summary.txt
+│ ├─ r50_imagenet1k_onecycle_amp_bs64_ep150/ # Local full ImageNet reports
+│ │ ├─ accuracy_curve.png
+│ │ ├─ loss_curve.png
+│ │ ├─ classification_report.txt
+│ │ ├─ confusion_matrix.csv
+│ │ └─ model_summary.txt
+│ └─ r50_onecycle_amp/ # Imagenet-Mini reports
+│ ├─ accuracy_curve.png
+│ ├─ loss_curve.png
+│ ├─ classification_report.txt
+│ ├─ confusion_matrix.csv
+│ └─ model_summary.txt
+│
+├─ runs/
+│ ├─ imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/ # AWS TensorBoard runs
+│ ├─ r50_imagenet1k_onecycle_amp_bs64_ep150/ # Local TensorBoard logs
+│ └─ r50_onecycle_amp/ # Imagenet-Mini TensorBoard logs
+│
+├─ images/
+│ ├─ resnet50_arch.png # Model architecture visualization
+│ └─ imagenet_samples.png # Sample input images
+│
+├─ scripts/ # Bash utilities (launch, resume, etc.)
+│ └─ fix_imagenet_val.py
+│ └─ launch_lr_finder.sh
+│ └─ launch_single_gpu.sh
+│ └─ launch_multi_gpu.sh
+│ └─ make_debug_data.py
+│ └─ rehumanize_imagenet_reports.py   # To change classification report and confusion matrix from class ID to Class names
+│
+├─ utils/
+│ └─ imagenet_class_index.json # Synset → human-readable name mapping
+│
+├─ update_readme.py # Auto-update README metadata and results tables
+├─ requirements.txt # Local dependencies
+├─ requirements.aws.txt # AWS dependencies (DALI, etc.)
+├─ README.md # Project overview and results summary
+├─ README_AWS.md # AWS Setup instructions
+└─ .gitignore / .gitattributes # Git configuration
 ```
 
 ---
