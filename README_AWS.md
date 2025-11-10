@@ -387,8 +387,9 @@ If your last checkpoint was produced by a single-GPU run, you can still resume o
 - You pass `--resume <.pth>` that contains model, optimizer, scaler, and epoch.  
 - The data path and class count match what the checkpoint was trained on.
 
-### ✅ Tip:
-Always verify the current LR and schedule in Weights & Biases or in out/train_log.csv to ensure your resume or freeze behaves as expected.
+**✅ Tip:Always verify the current LR and schedule in Weights & Biases or in out/train_log.csv to ensure your resume or freeze behaves as expected.**
+
+
 ---
 
 ## 🧾 Appendix D — Shutdown & Cost‑Control Guide

@@ -485,3 +485,125 @@ max_lr = 0.1 × batch size/256
 > **Auto-filled (from runs):** For run **`r50_imagenet1k_onecycle_amp_bs64_ep150`**, best Val Top-1 = **77.82%**, Top-5 = **93.82%** at epoch **228**.
 
 ---
+## 6) Training and Evaluation Summary
+
+This section consolidates the training results and performance comparison between **Local (RTX 4060 Ti)** and **AWS (g5.xlarge A10G)** runs.
+
+---
+
+### 🖥️ A) Single-GPU Training (Local)
+
+**Infrastructure**
+
+| Component | Specification |
+|------------|----------------|
+| **GPU** | NVIDIA RTX 4060 Ti (16 GB VRAM) |
+| **CPU / RAM** | 32 GB System RAM  •  1 TB SSD |
+| **OS / Runtime** | Windows 11 + PyTorch 2.x (AMP enabled) |
+
+**Training Profile**
+
+| Parameter | Value |
+|------------|--------|
+| **Epochs** | ≈ 250  (1 hr / epoch → ~240 hrs total) |
+| **Batch Size** | 64 |
+| **Max LR** | 0.0125 |
+| **Scheduler** | OneCycleLR |
+| **Precision** | Automatic Mixed Precision (AMP) |
+| **Optimizations** | Checkpointing • Pin Memory • Multi-worker DataLoader • Label Smoothing • Standard Augmentations |
+
+**Auto-filled Metrics** (from `out/r50_imagenet1k_onecycle_amp_bs64_ep150/train_log.csv`)
+
+| Metric | Value |
+|--------|--------|
+| Training Top-1 | 82.63% |
+| Training Top-5 | 94.05% |
+| Validation Top-1 | 77.82% |
+| Validation Top-5 | 93.82% |
+
+> *(Example ≈ Train 71.45 % / 88.92 %  •  Val 73.77 % / 91.87 %)*
+
+**Visual Logs**
+
+| Type | Placeholder |
+|------|--------------|
+| CLI snapshot | ![Local Training CLI](images/Training_Image1.png) |
+| Epoch progress | ![Local Training Loss Curve](images/Training_Image3.png) |
+| TensorBoard metrics | *(add TensorBoard screenshots from `runs/r50_imagenet1k_onecycle_amp_bs64_ep150`)* |
+
+---
+
+### ☁️ B) AWS Training (g5.xlarge A10G)
+
+**Infrastructure**
+
+| Component | Specification |
+|------------|----------------|
+| **Instance Type** | `g5.xlarge` (4 vCPU / 16 GiB RAM) |
+| **GPU** | NVIDIA A10G Tensor Core (24 GB) |
+| **Region** | ap-south-1 (Mumbai) |
+| **Storage** | 500 GB EBS Volume mounted → `/mnt/imagenet1k` |
+| **Approval** | Quota raised for 8 vCPUs of “All G and VT Spot Requests” |
+
+**Training Profile**
+
+| Parameter | Value |
+|------------|--------|
+| **Epochs Completed** | 195 |
+| **Batch Size** | 256 |
+| **Max LR** | 0.125 |
+| **Training Time** | ~30 min / epoch  (≈ 90 hours total) |
+| **Optimizations Used** | DALI pipeline • OneCycle LR • AMP • Efficient Data Loading • Distributed Sampling • tmux management • Memory/Error handling |
+
+**Auto-filled Metrics** (from `out/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/train_log.csv`)
+
+| Metric | Value |
+|--------|--------|
+| Training Top-1 | 81.01% |
+| Training Top-5 | 93.54% |
+| Validation Top-1 | 77.66% |
+| Validation Top-5 | 93.84% |
+
+> *(Example ≈ Train 75.60 % / 90.88 %  •  Val 76.15 % / 91.26 %)*
+
+**Runtime Snapshots & Logs**
+
+| Type | Placeholder |
+|------|--------------|
+| Training CLI log | ![AWS Training CLI](images/AWS_Training_Image1.png) |
+| GPU Usage – Training | ![GPU Usage Training 128 Batch 2 Epochs](images/GPU_Usage_AWS_Training_128Batch_2Epochs.png) |
+| GPU Usage – LR Finder | ![GPU Usage LR Finder](images/GPU_Usage_AWS_Lr_Fidner.py.png) |
+| GPU Usage – Evaluation | ![GPU Usage Evaluation](images/GPU_Usage_AWS_Evaluation_128Batch_2Epochs.png) |
+| EC2 GPU Monitor | ![EC2 GPU Usage](images/EC2_gpu_usage_training.png) |
+| EC2 Memory Monitor | ![EC2 Memory Usage](images/EC2_memory_usage_training.png) |
+
+**Cost Breakdown**
+
+| Task | Est. Cost (USD) |
+|------|-----------------|
+| Dataset Download + Unzip | ≈ $6 |
+| Training (195 epochs) | ≈ $25 |
+| **Total** | **≈ $31** |
+
+**Notes**
+- Dataset mounted at `/mnt/imagenet1k`.  
+- ~2× faster per epoch vs local (run on A10G + DALI).  
+- W&B Dashboard: add link → `https://wandb.ai/<user>/imagenet1k_runs`
+
+![AWS WandB Screenshot Placeholder](images/AWS_WandB_Screenshot.png)
+
+---
+
+**Summary Comparison**
+
+| Feature | Local (4060 Ti) | AWS (A10G) |
+|----------|-----------------|-------------|
+| Batch Size | 64 | 256 |
+| Precision | AMP | AMP + DALI |
+| Epoch Time | ~60 min | ~30 min |
+| Total Training Hours | ~240 | ~90 |
+| Best Val Top-1 | 77.82% | 77.66% |
+| Best Val Top-5 | 93.82% | 93.84% |
+| Storage Path | `data/imagenet` | `/mnt/imagenet1k` |
+
+---
