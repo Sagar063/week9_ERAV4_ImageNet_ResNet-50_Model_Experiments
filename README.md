@@ -118,9 +118,9 @@ pip install -r requirements_aws.txt
     ```bash
     kaggle competitions download -c imagenet-object-localization-challenge
     ```
-#### ImageNet-1k :  download in AWS machine. Refer README_AWS.md for instructions
+For dataset download in AWS and AWS setup, see the [ImageNet Dataset Setup on AWS instructions](./README_AWS.md).
 
-Once the dataset is downloaded place as:
+#### Once the dataset is downloaded place as:
 ```
 data/imagenet/
   ├─ train/
@@ -146,7 +146,18 @@ tmux new -s imagenet1k_full -n train
 source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
 cd ~/week9_ERAV4_ImageNet_ResNet-50_Model_Experiments
 
-bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   --stats-file data_stats/imagenet_1k_aws_stats.json   --show-progress   --amp --channels-last   --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6   --wandb --wandb-project imagenet1k_runs   --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6
+# (Optional) start W&B session automatically when resuming
+unset RESET_SCHED
+unset FREEZE_LR
+unset FREEZE_LR_VALUE
+
+bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6 \
+  --max-lr 0.125 \
+  --stats-file data_stats/imagenet_1k_aws_stats.json \
+  --show-progress --amp --channels-last \
+  --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6 \
+  --wandb --wandb-project imagenet1k_runs \
+  --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6
 ```
 
 ### 2.3 Resume from checkpoint
@@ -158,8 +169,28 @@ python train_full_ImageNet1k_SingleGPU.py   --data-root data/imagenet   --batch-
  
 **AWS** Refer README_AWS.md for more instructions
 ```bash
-bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6   --max-lr 0.125   --stats-file data_stats/imagenet_1k_aws_stats.json   --show-progress   --amp --channels-last   --resume /mnt/imagenet1k/checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch120.pth   --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6   --wandb --wandb-project imagenet1k_runs   --wandb-tags imagenet1k_full,dali,1gpu,nvme,lr0p125,bs256,e150,work6,resumed_e120
+tmux new -s imagenet1k_full -n train # tmux attach -t imagenet1k_full  if tmux is running
+
+# Inside tmux
+source /opt/dlami/nvme/envs/imagenet1k_venv/bin/activate
+cd ~/week9_ERAV4_ImageNet_ResNet-50_Model_Experiments
+
+# (Optional) start W&B session automatically when resuming
+unset RESET_SCHED
+unset FREEZE_LR
+unset FREEZE_LR_VALUE
+
+bash scripts/launch_single_gpu.sh /mnt/imagenet1k 160 256 6 \
+  --max-lr 0.125 \ # Put value we got by executing lr_finder.py
+  --stats-file data_stats/imagenet_1k_aws_stats.json \
+  --show-progress \
+  --amp --channels-last \
+  --resume /mnt/imagenet1k/checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch119.pth \
+  --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6 \
+  --wandb --wandb-project imagenet1k_runs \
+  --wandb-tags imagenet1k_full,dali,1gpu,onecycle_reset,bs256,ep120to160,resumed_e120
 ```
+
 ### 2.4 Key arguments
 #### For training in local machine
 | Arg | Default | Meaning |
@@ -384,6 +415,28 @@ Before starting full training, we run a **Learning Rate Finder** to determine an
 **How it works**  
 `lr_finder.py` performs a range test (`start_lr → end_lr` over N iterations), recording loss vs LR and saving a plot to `lr_finder_plots/`.
 
+**🧮 How to Decide --num_iter Based on Batch Size**
+
+When running the Learning Rate Finder, each batch = one iteration.
+For a dataset with N samples and batch size B:
+
+iterations per epoch = 𝑁/𝐵
+But we don’t need a full epoch to see the LR vs. loss pattern —
+only about 1/10th of an epoch, capped at ~1000 iterations.
+
+So the rule of thumb is:
+
+✅ Run at most one full epoch worth of iterations, but never more than 1000.
+
+| Dataset       | #Samples | Batch Size | 1 Epoch ≈ (iters) | Recommended `--num_iter` |
+| ------------- | -------- | ---------- | ----------------- | ------------------------ |
+| CIFAR-10      | 50 000   | 128        | 390               | 300 – 400                |
+| ImageNet-Mini | 100 000  | 128        | 780               | 700 – 800                |
+| ImageNet-1k   | 1.28 M   | 64         | 20 000            | 800 – 1000  (cap)        |
+| ImageNet-1k   | 1.28 M   | 128        | 10 000            | 800 – 1000               |
+| ImageNet-1k   | 1.28 M   | 256        | 5 000             | 500 – 800                |
+| ImageNet-1k   | 1.28 M   | 512        | 2 500             | 300 – 500                |
+
 **Run (Local)**
 ```bash
 python lr_finder.py find_lr --data-root data/imagenet --batch-size 64 --num-iter 1000
@@ -393,6 +446,28 @@ python lr_finder.py find_lr --data-root data/imagenet --batch-size 64 --num-iter
 ```bash
 bash scripts/launch_lr_finder.sh /mnt/imagenet1k 256 2000 lr_finder_plots_imagenet1k_AWS
 ```
+**🎯 How to Pick the Final max_lr for Training**
+
+If you’re using OneCycleLR, the max_lr is the peak learning rate during training.
+You can estimate it either from the LR Finder or by scaling with batch size.
+
+🔹 Option 1: Use LR Finder Result
+
+Pick the LR value just before the loss starts to blow up (the lowest point before the spike).
+
+🔹 Option 2: Scale Linearly with Batch Size
+
+Use the linear scaling rule (starting from baseline 0.1 for batch = 256):
+
+max_lr = 0.1 × batch size/256
+
+| Batch Size | Scaled `max_lr` | Comment                              |
+| ---------- | --------------- | ------------------------------------ |
+| 64         | 0.025           | good for small GPUs                  |
+| 128        | 0.05            | standard choice                      |
+| 256        | 0.1             | baseline for ResNet-50               |
+| 512        | 0.2             | aggressive; requires stable training |
+| 1024       | 0.4             | multi-GPU large-batch setup          |
 
 **Plot (AWS ImageNet-1k, iter=2000)**  
 `lr_finder_plots_imagenet1k_AWS/lr_finder_20251031_203333_start1e-07_end1.0_iter2000.png`
@@ -403,6 +478,7 @@ bash scripts/launch_lr_finder.sh /mnt/imagenet1k 256 2000 lr_finder_plots_imagen
 - Loss decreases smoothly up to **~0.10–0.12**, then trends upward.  
 - We selected **`--max-lr 0.125`** for OneCycleLR on AWS (used in training commands above).  
 - For local runs (smaller batch), a slightly lower `max_lr` (e.g., **0.1**) is reasonable.
+	​
 
 > **Auto-filled (from runs):** For run **`r50_imagenet1k_onecycle_amp_bs64_ep150`**, best Val Top-1 = **77.82%**, Top-5 = **93.82%** at epoch **228**.
 
