@@ -118,7 +118,7 @@ pip install -r requirements_aws.txt
     ```bash
     kaggle competitions download -c imagenet-object-localization-challenge
     ```
-For dataset download in AWS and AWS setup, see the [ImageNet Dataset Setup on AWS instructions](./README_AWS.md).
+**For dataset download in AWS and AWS setup, see the [ImageNet Dataset Setup on AWS instructions](./README_AWS.md).**
 
 #### Once the dataset is downloaded place as:
 ```
@@ -166,7 +166,8 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6 \
 ```bash
 python train_full_ImageNet1k_SingleGPU.py   --data-root data/imagenet   --batch-size 64   --epochs 235   --max-lr 0.0125   --pct-start 0.1   --workers 8   --reports   --use-best-for-reports   --name r50_imagenet1k_onecycle_amp_bs64_ep150   --resume
 ```
- 
+
+
 **AWS** Refer README_AWS.md for more instructions
 ```bash
 tmux new -s imagenet1k_full -n train # tmux attach -t imagenet1k_full  if tmux is running
@@ -190,6 +191,7 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 160 256 6 \
   --wandb --wandb-project imagenet1k_runs \
   --wandb-tags imagenet1k_full,dali,1gpu,onecycle_reset,bs256,ep120to160,resumed_e120
 ```
+**For more details on diffrent resume approaches, see the [Resuming trainings on AWS instructions](./README_AWS.md).**
 
 ### 2.4 Key arguments
 #### For training in local machine

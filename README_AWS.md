@@ -1,4 +1,4 @@
-# 📘 AWS ImageNet Dataset & Training Pipeline Setup (Final)
+# 📘 AWS ImageNet Dataset & Training Pipeline Setup
 
 This document details the **end‑to‑end AWS workflow** we actually used for **ImageNet‑1K** with **ResNet‑50 / OneCycle / AMP**: dataset download and snapshotting, GPU training setup (single & multi‑GPU), robust resume/freeze logic, cost control, and a clean way to **store heavy artifacts on the NVMe data volume** while keeping the repo light via symlinks.
 
@@ -292,9 +292,15 @@ bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6 \
 When continuing from a saved checkpoint (`--resume checkpoints/.../last_epochXXX.pth`),  
 just run normally — no env vars required:
 ```bash
-bash scripts/launch_single_gpu.sh /mnt/imagenet1k 150 256 6 \
-  --resume checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch150.pth \
-  --max-lr 0.125 --amp --channels-last --show-progress
+bash scripts/launch_single_gpu.sh /mnt/imagenet1k 160 256 6 \
+  --max-lr 0.125 \
+  --stats-file data_stats/imagenet_1k_aws_stats.json \
+  --show-progress \
+  --amp --channels-last \
+  --resume /mnt/imagenet1k/checkpoints/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/last_epoch119.pth \
+  --out-dir imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6 \
+  --wandb --wandb-project imagenet1k_runs \
+  --wandb-tags imagenet1k_full,dali,1gpu,onecycle_reset,bs256,ep120to160,resumed_e120
 ```
 The scheduler resumes **exactly** where it left off, restoring all states (optimizer, scaler, scheduler).
 
@@ -381,7 +387,7 @@ If your last checkpoint was produced by a single-GPU run, you can still resume o
 - You pass `--resume <.pth>` that contains model, optimizer, scaler, and epoch.  
 - The data path and class count match what the checkpoint was trained on.
 
-✅ Tip:
+### ✅ Tip:
 Always verify the current LR and schedule in Weights & Biases or in out/train_log.csv to ensure your resume or freeze behaves as expected.
 ---
 
