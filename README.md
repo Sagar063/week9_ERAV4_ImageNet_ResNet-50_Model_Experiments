@@ -58,10 +58,10 @@ It reports the **validation row at the best Top-1 epoch** and the **final traini
 
 | Run | Split | Top-1 (%) | Top-5 (%) | Loss | Throughput (img/s) | Epoch @ best Top-1 |
 |---|---|---:|---:|---:|---:|---:|
-| **Local** | Val (best)  | {{LOCAL_VAL_TOP1_BEST}} | {{LOCAL_VAL_TOP5_BEST}} | {{LOCAL_VAL_LOSS_AT_BEST}} | {{LOCAL_VAL_IPS_AT_BEST}} | {{LOCAL_VAL_EPOCH_AT_BEST}} |
-| **Local** | Train (final) | {{LOCAL_TRAIN_TOP1_FINAL}} | {{LOCAL_TRAIN_TOP5_FINAL}} | {{LOCAL_TRAIN_LOSS_FINAL}} | {{LOCAL_TRAIN_IPS_FINAL}} | — |
-| **AWS**   | Val (best)  | {{AWS_VAL_TOP1_BEST}} | {{AWS_VAL_TOP5_BEST}} | {{AWS_VAL_LOSS_AT_BEST}} | {{AWS_VAL_IPS_AT_BEST}} | {{AWS_VAL_EPOCH_AT_BEST}} |
-| **AWS**   | Train (final) | {{AWS_TRAIN_TOP1_FINAL}} | {{AWS_TRAIN_TOP5_FINAL}} | {{AWS_TRAIN_LOSS_FINAL}} | {{AWS_TRAIN_IPS_FINAL}} | — |
+| **Local** | Val (best)  | 77.82% | 93.82% | 1.8419 | 679.0300 | 228 |
+| **Local** | Train (final) | 82.63% | 94.05% | 1.7160 | 389.1900 | — |
+| **AWS**   | Val (best)  | 77.66% | 93.84% | 1.8445 | nan | 174 |
+| **AWS**   | Train (final) | 81.01% | 93.54% | 1.3245 | 810.0000 | — |
 
 *Exact values are auto-filled by* `update_readme.py`.
 
@@ -2097,14 +2097,13 @@ Once both **local (RTX 4060 Ti)** and **AWS (A10G g5.xlarge)** trainings were co
 
 ---
 
-### 🧱 Space Structure Overview
+Sunny063/ResNet50-Imagenet-CPU-Demo-ERAV4_CPU_Model/
 ├─ app.py # Gradio UI (upload / URL input / Top-K / Predict)
 ├─ inference.py # Loads weights + meta.json and performs inference
 ├─ requirements.txt # Pinned dependencies
 ├─ meta.json # Training mean, std, and input size
 ├─ model_cpu_fp32.pth # Converted full-precision model
-└─ utils/imagenet_class_index.json # Human-readable ImageNet labels
-
+├─ utils/imagenet_class_index.json # Human-readable ImageNet labels
 ---
 
 ### 🖼️ Space Snapshot
