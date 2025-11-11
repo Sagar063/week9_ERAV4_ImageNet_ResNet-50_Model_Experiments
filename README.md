@@ -52,7 +52,18 @@ Shows `train/loss`, `train/lr`, `train/top1`, etc., live.
 - Run name: `imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6` (example)
 
 > **Auto-filled results (from `out/<RUN>/train_log.csv`):**  
-> Best Val Top-1: **77.82%** • Best Val Top-5: **93.82%** • Best Epoch: **228**
+The table below is generated from `out/imagenet1kfull_g5x_1gpu_dali_nvme_lr0p125_bs256_e150_work6/train_log.csv` 
+and `out/r50_imagenet1k_onecycle_amp_bs64_ep150/train_log.csv`  by `update_readme.py`.  
+It reports the **validation row at the best Top-1 epoch** and the **final training row**.
+
+| Run | Split | Top-1 (%) | Top-5 (%) | Loss | Throughput (img/s) | Epoch @ best Top-1 |
+|---|---|---:|---:|---:|---:|---:|
+| **Local** | Val (best)  | {{LOCAL_VAL_TOP1_BEST}} | {{LOCAL_VAL_TOP5_BEST}} | {{LOCAL_VAL_LOSS_AT_BEST}} | {{LOCAL_VAL_IPS_AT_BEST}} | {{LOCAL_VAL_EPOCH_AT_BEST}} |
+| **Local** | Train (final) | {{LOCAL_TRAIN_TOP1_FINAL}} | {{LOCAL_TRAIN_TOP5_FINAL}} | {{LOCAL_TRAIN_LOSS_FINAL}} | {{LOCAL_TRAIN_IPS_FINAL}} | — |
+| **AWS**   | Val (best)  | {{AWS_VAL_TOP1_BEST}} | {{AWS_VAL_TOP5_BEST}} | {{AWS_VAL_LOSS_AT_BEST}} | {{AWS_VAL_IPS_AT_BEST}} | {{AWS_VAL_EPOCH_AT_BEST}} |
+| **AWS**   | Train (final) | {{AWS_TRAIN_TOP1_FINAL}} | {{AWS_TRAIN_TOP5_FINAL}} | {{AWS_TRAIN_LOSS_FINAL}} | {{AWS_TRAIN_IPS_FINAL}} | — |
+
+*Exact values are auto-filled by* `update_readme.py`.
 
 ---
 
@@ -488,8 +499,6 @@ max_lr = 0.1 × batch size/256
 - We selected **`--max-lr 0.125`** for OneCycleLR on AWS (used in training commands above).  
 - For local runs (smaller batch), a slightly lower `max_lr` (e.g., **0.1**) is reasonable.
 
-
-> **Auto-filled (from runs):** For run **`r50_imagenet1k_onecycle_amp_bs64_ep150`**, best Val Top-1 = **77.82%**, Top-5 = **93.82%** at epoch **228**.
 
 ---
 
@@ -2100,7 +2109,8 @@ Once both **local (RTX 4060 Ti)** and **AWS (A10G g5.xlarge)** trainings were co
 
 ### 🖼️ Space Snapshot
 > *Hugging Face Space UI screenshot*  
-> ![Hugging Face Space](images/huggingspace.png)
+> ![Hugging Face Space](images/HuggingSpace_Prediction_Image1.png)
+> ![Hugging Face Space](images/HuggingSpace_Prediction_Image2.png)
 
 ---
 
