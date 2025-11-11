@@ -2096,7 +2096,7 @@ Once both **local (RTX 4060 Ti)** and **AWS (A10G g5.xlarge)** trainings were co
 > The Space reproduces the exact normalization (mean/std) and preprocessing used during training to ensure prediction consistency.
 
 ---
-
+```
 Sunny063/ResNet50-Imagenet-CPU-Demo-ERAV4_CPU_Model/
 ├─ app.py # Gradio UI (upload / URL input / Top-K / Predict)
 ├─ inference.py # Loads weights + meta.json and performs inference
@@ -2104,6 +2104,8 @@ Sunny063/ResNet50-Imagenet-CPU-Demo-ERAV4_CPU_Model/
 ├─ meta.json # Training mean, std, and input size
 ├─ model_cpu_fp32.pth # Converted full-precision model
 ├─ utils/imagenet_class_index.json # Human-readable ImageNet labels
+```
+
 ---
 
 ### 🖼️ Space Snapshot
