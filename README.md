@@ -2072,3 +2072,69 @@ To further accelerate training and potentially improve accuracy:
 ---
 
 ---
+## 8) Model Deployment and Inferencing
+
+Once both **local (RTX 4060 Ti)** and **AWS (A10G g5.xlarge)** trainings were completed, the final ResNet-50 models were deployed for **interactive inference** on **Hugging Face Spaces** using a lightweight **Gradio** web interface.
+
+### 🚀 Deployment Summary
+- Deployment platform: **Hugging Face Spaces (Gradio SDK)**
+- Target environment: **CPU-only runtime** (Python 3.10)
+- Model input: RGB image or URL
+- Output: Top-K class predictions with confidence scores
+- Backend files: `app.py`, `inference.py`, `requirements.txt`, `meta.json`, `model_cpu_fp32.pth`, `download_weights.py`, `runtime.txt`, 
+  and `utils/imagenet_class_index.json`
+
+> The Space reproduces the exact normalization (mean/std) and preprocessing used during training to ensure prediction consistency.
+
+---
+
+### 🧱 Space Structure Overview
+├─ app.py # Gradio UI (upload / URL input / Top-K / Predict)
+├─ inference.py # Loads weights + meta.json and performs inference
+├─ requirements.txt # Pinned dependencies
+├─ meta.json # Training mean, std, and input size
+├─ model_cpu_fp32.pth # Converted full-precision model
+└─ utils/imagenet_class_index.json # Human-readable ImageNet labels
+
+---
+
+### 🖼️ Space Snapshot
+> *Hugging Face Space UI screenshot*  
+> ![Hugging Face Space](images/huggingspace.png)
+
+---
+
+### 🔗 Live Demo Links
+
+| Model Type | Description | Hugging Face Space |
+|-------------|--------------|--------------------|
+| 🖥️ Local Model | Trained on RTX 4060 Ti (OneCycleLR + AMP) | [🔗 Try Demo](https://huggingface.co/spaces/Sunny063/ResNet50-Imagenet-CPU-Demo-ERAV4_CPU_Model) |
+| ☁️ AWS Model | Trained on A10G g5.xlarge with DALI pipeline | [🔗 Try Demo](https://huggingface.co/spaces/Sunny063/ResNet50-Imagenet-AWS-Demo-ERAV4) |
+
+---
+### 🧩 How Others Can Reproduce or Reuse
+A detailed, step-by-step deployment guide (covering conversion, packaging, and Space configuration) is available in  
+👉 **[`README_HuggingSpace.md`](./README_HuggingSpace.md)**
+
+That document explains:
+- How to convert checkpoints using `convert_to_cpu.py`
+- Correct dependency pinning and Gradio version fixes
+- Handling normalization mismatches via `meta.json`
+- Secure hosting practices and repository cloning instructions
+
+---
+
+### 🏁 Key Takeaways
+- Both Spaces prove **training-to-inference reproducibility**.
+- Conversion scripts and metadata guarantee identical normalization.
+- Deployment is modular — any ImageNet-style model can be substituted with minimal edits.
+
+---
+
+---
+
+
+
+
+
+
